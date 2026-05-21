@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { useBYOK } from '../hooks/useBYOK';
+import { useStore } from '../store/useStore';
 
 export const BYOKSettings: React.FC = () => {
   const { apiKey, saveApiKey, removeApiKey } = useBYOK();
+  const { modelName, setModelName } = useStore();
   const [inputKey, setInputKey] = useState(apiKey);
+  const [inputModel, setInputModel] = useState(modelName);
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSave = () => {
     saveApiKey(inputKey);
+    setModelName(inputModel);
     setIsOpen(false);
   };
 
@@ -42,6 +46,17 @@ export const BYOKSettings: React.FC = () => {
           placeholder="sk-..."
           className="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+
+        <p className="text-sm text-gray-600 mb-2">Select Target Model</p>
+        <select
+          value={inputModel}
+          onChange={(e) => setInputModel(e.target.value)}
+          className="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="gpt-4o-mini">gpt-4o-mini</option>
+          <option value="gpt-4o">gpt-4o</option>
+          <option value="claude-3-opus">claude-3-opus</option>
+        </select>
 
         <div className="flex justify-end space-x-2">
           {apiKey && (

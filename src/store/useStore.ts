@@ -5,6 +5,8 @@ import localforage from 'localforage';
 interface AppState {
   apiKey: string;
   setApiKey: (key: string) => void;
+  modelName: string;
+  setModelName: (name: string) => void;
   parsedText: string[];
   setParsedText: (text: string[]) => void;
   activeCourse: Course | null;
@@ -21,10 +23,18 @@ export const useStore = create<AppState>((set) => {
   localforage.getItem<Course>('activeCourse').then((course) => {
     if (course) set({ activeCourse: course });
   });
+  localforage.getItem<string>('modelName').then((model) => {
+    if (model) set({ modelName: model });
+  });
 
   return {
     apiKey: '',
     setApiKey: (key) => set({ apiKey: key }),
+    modelName: 'gpt-4o-mini',
+    setModelName: (name) => {
+      localforage.setItem('modelName', name);
+      set({ modelName: name });
+    },
     parsedText: [],
     setParsedText: (text) => {
       localforage.setItem('parsedText', text);

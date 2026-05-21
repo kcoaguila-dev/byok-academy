@@ -7,6 +7,7 @@ import { useBYOK } from '../hooks/useBYOK';
 export const UploadDashboard: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState<number>(0);
   const { setParsedText } = useStore();
   const { generateSyllabus, loading, error } = useOntology();
   const { apiKey } = useBYOK();
@@ -23,10 +24,13 @@ export const UploadDashboard: React.FC = () => {
     }
 
     setIsProcessing(true);
+    setProgress(0);
     try {
-      const text = await extractTextFromPdf(file);
-      setParsedText(text);
-      await generateSyllabus(text);
+      const textArray = await extractTextFromPdf(file, (p) => setProgress(p));
+      setParsedText(textArray);
+      // For generateSyllabus, we'll join the array into a single string for now.
+      // Another step will handle useOntology if necessary, but this keeps it working.
+      await generateSyllabus(textArray.join('\n\n'));
     } catch (err) {
       console.error(err);
       alert('Error processing file');
@@ -74,11 +78,20 @@ export const UploadDashboard: React.FC = () => {
         }`}
       >
         {isProcessing || loading ? (
-          <div className="space-y-4">
-            <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto" />
-            <p className="text-lg text-gray-700">
+          <div className="space-y-4 w-full max-w-md mx-auto">
+            <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-lg text-gray-700 font-medium">
               {isProcessing ? 'Extracting text from PDF...' : 'Generating syllabus...'}
             </p>
+            {isProcessing && (
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                ></div>
+                <p className="text-sm text-gray-500 mt-2 text-center">{progress}% Complete</p>
+              </div>
+            )}
           </div>
         ) : (
           <div>

@@ -11,9 +11,10 @@ interface AppState {
   setActiveCourse: (course: Course | null) => void;
   activeConcept: Concept | null;
   setActiveConcept: (concept: Concept | null) => void;
+  completeActiveConcept: () => void;
 }
 
-export const useStore = create<AppState>((set) => {
+export const useStore = create<AppState>((set, get) => {
   // Load initial state asynchronously
   localforage.getItem<string[]>('parsedText').then((text) => {
     if (text) set({ parsedText: text });
@@ -37,5 +38,22 @@ export const useStore = create<AppState>((set) => {
     },
     activeConcept: null,
     setActiveConcept: (concept) => set({ activeConcept: concept }),
+    completeActiveConcept: () => {
+      const { activeCourse, activeConcept } = get();
+      if (!activeCourse || !activeConcept) return;
+
+      const updatedConcepts = activeCourse.concepts.map(c =>
+        c.id === activeConcept.id ? { ...c, status: 'completed' as const } : c
+      );
+
+      const updatedCourse = { ...activeCourse, concepts: updatedConcepts };
+      const updatedConcept = { ...activeConcept, status: 'completed' as const };
+
+      localforage.setItem('activeCourse', updatedCourse);
+      set({
+        activeCourse: updatedCourse,
+        activeConcept: updatedConcept
+      });
+    }
   };
 });

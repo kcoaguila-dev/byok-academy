@@ -8,7 +8,7 @@ interface QuizFeedback {
 }
 
 export const ActiveLearning: React.FC = () => {
-  const { apiKey, activeConcept } = useStore();
+  const { apiKey, activeConcept, completeActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
   const [feedback, setFeedback] = useState<(QuizFeedback | null)[]>([null, null, null]);
@@ -93,6 +93,11 @@ Output ONLY a JSON object matching this schema, without markdown formatting:
       const newFeedback = [...feedback];
       newFeedback[index] = parsedFeedback;
       setFeedback(newFeedback);
+
+      // Mastery Tracking: if all 3 questions are answered correctly
+      if (newFeedback.filter(fb => fb?.isCorrect).length === 3) {
+        completeActiveConcept();
+      }
     } catch (e) {
       console.error('Failed to grade answer', e);
     } finally {

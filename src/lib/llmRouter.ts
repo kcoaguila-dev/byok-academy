@@ -1,6 +1,7 @@
 export const callLLM = async (
   prompt: string,
   apiKey: string,
+  modelName: string,
   provider: 'openai' | 'anthropic' = 'openai'
 ): Promise<string> => {
   if (provider === 'openai') {
@@ -11,7 +12,7 @@ export const callLLM = async (
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: modelName,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -33,7 +34,7 @@ export const callLLM = async (
         'anthropic-dangerously-allow-browser': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-3-opus-20240229',
+        model: modelName,
         max_tokens: 1024,
         messages: [{ role: 'user', content: prompt }],
       }),

@@ -5,8 +5,8 @@ import localforage from 'localforage';
 interface AppState {
   apiKey: string;
   setApiKey: (key: string) => void;
-  parsedText: string;
-  setParsedText: (text: string) => void;
+  parsedText: string[];
+  setParsedText: (text: string[]) => void;
   activeCourse: Course | null;
   setActiveCourse: (course: Course | null) => void;
   activeConcept: Concept | null;
@@ -15,7 +15,7 @@ interface AppState {
 
 export const useStore = create<AppState>((set) => {
   // Load initial state asynchronously
-  localforage.getItem<string>('parsedText').then((text) => {
+  localforage.getItem<string[]>('parsedText').then((text) => {
     if (text) set({ parsedText: text });
   });
   localforage.getItem<Course>('activeCourse').then((course) => {
@@ -25,7 +25,7 @@ export const useStore = create<AppState>((set) => {
   return {
     apiKey: '',
     setApiKey: (key) => set({ apiKey: key }),
-    parsedText: '',
+    parsedText: [],
     setParsedText: (text) => {
       localforage.setItem('parsedText', text);
       set({ parsedText: text });

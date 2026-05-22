@@ -26,7 +26,6 @@ export const UploadDashboard: React.FC = () => {
       alert('Please upload a PDF file.');
       return;
     }
-
     if (!apiKey) {
       alert('Please set your API key first.');
       return;
@@ -35,20 +34,13 @@ export const UploadDashboard: React.FC = () => {
     setIsProcessing(true);
     setProgress(0);
     try {
-      // 1. Extract text from PDF
       const textArray = await extractTextFromPdf(file, (p) => setProgress(p));
       setParsedText(textArray);
 
-      const fullText = textArray.join('\n\n');
-
-      // 2. Index the extracted text into the Local RAG pipeline
-      // We will re-use the progress bar to show indexing progress
       setProgress(0);
       await indexDocument(textArray, (p) => setProgress(p));
 
-      // 3. Generate the syllabus
-      // For generateSyllabus, we'll join the array into a single string for now.
-      // Another step will handle useOntology if necessary, but this keeps it working.
+      const fullText = textArray.join('\n\n');
       await generateSyllabus(fullText);
     } catch (err) {
       console.error(err);
@@ -100,7 +92,7 @@ export const UploadDashboard: React.FC = () => {
           <div className="space-y-4 w-full max-w-md mx-auto">
             <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
             <p className="text-lg text-gray-700 font-medium">
-              {isProcessing ? 'Processing Document...' : 'Generating syllabus...'}
+              {isProcessing ? 'Processing Document & Embeddings...' : 'Generating syllabus...'}
             </p>
             {isProcessing && (
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">
@@ -120,16 +112,9 @@ export const UploadDashboard: React.FC = () => {
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <p className="text-xl text-gray-700 font-medium">
-              Drag and drop your PDF here
-            </p>
+            <p className="text-xl text-gray-700 font-medium">Drag and drop your PDF here</p>
             <p className="text-gray-500 mt-2">or click to browse</p>
             <input
               type="file"
@@ -142,10 +127,7 @@ export const UploadDashboard: React.FC = () => {
                 }
               }}
             />
-            <label
-              htmlFor="file-upload"
-              className="mt-4 inline-block bg-white px-4 py-2 border border-gray-300 rounded shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
-            >
+            <label htmlFor="file-upload" className="mt-4 inline-block bg-white px-4 py-2 border border-gray-300 rounded shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
               Select File
             </label>
           </div>
@@ -159,7 +141,6 @@ export const UploadDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Basic UI for testing local RAG search */}
       <div className="mt-8 w-full max-w-2xl">
         <h2 className="text-2xl font-bold mb-4">Test Local Search</h2>
         <div className="flex space-x-2 mb-4">
@@ -171,10 +152,7 @@ export const UploadDashboard: React.FC = () => {
             className="flex-1 p-2 border border-gray-300 rounded"
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
-          <button
-            onClick={handleSearch}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
+          <button onClick={handleSearch} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             Search
           </button>
         </div>
@@ -182,9 +160,9 @@ export const UploadDashboard: React.FC = () => {
         {searchResults.length > 0 && (
           <div className="space-y-4">
             <h3 className="text-xl font-semibold">Top Results:</h3>
-            {searchResults.map((result, idx) => (
+            {searchResults.map((text, idx) => (
               <div key={idx} className="p-4 border border-gray-200 rounded bg-gray-50">
-                <p className="text-gray-800 text-sm whitespace-pre-wrap">{result}</p>
+                <p className="text-gray-800 text-sm whitespace-pre-wrap">{text}</p>
               </div>
             ))}
           </div>
@@ -192,4 +170,3 @@ export const UploadDashboard: React.FC = () => {
       </div>
     </div>
   );
-};

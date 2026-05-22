@@ -2,6 +2,17 @@
 
 **A 100% serverless, privacy-first, BYOK (Bring Your Own Key) AI learning platform.**
 
+## 🚀 How to Use (No Setup Required)
+
+You can access the live, fully-functional web app directly from your browser:
+**[Live App URL]**
+
+To get started:
+1. Open the link above.
+2. Click **API Settings** in the top right to securely enter your OpenAI API key.
+3. Upload any educational PDF document.
+4. The AI will generate an interactive syllabus and learning environment directly in your browser.
+
 ## Visual Interface
 
 ![Upload Dashboard](./public/screenshots/dashboard.png)
@@ -41,7 +52,7 @@ Your privacy is the core design principle of BYOK Academy.
 *   **State Management:** [Zustand](https://zustand-demo.pmnd.rs/)
 *   **PDF Parsing:** [pdfjs-dist](https://mozilla.github.io/pdf.js/)
 
-## 🚀 Getting Started (Local Dev)
+## 💻 For Developers (Local Setup)
 
 To run BYOK Academy locally, clone the repository and follow these steps:
 

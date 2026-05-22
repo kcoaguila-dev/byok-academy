@@ -1,12 +1,8 @@
 export const callLLM = async (
   prompt: string,
   apiKey: string,
-  provider: 'openai' | 'anthropic' = 'openai'
+  modelName: string = 'gpt-4o-mini'
 ): Promise<string> => {
-  if (provider === 'anthropic') {
-    console.warn('Anthropic direct browser calls are disabled due to CORS. Falling back to OpenAI compatible API.');
-  }
-
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -14,7 +10,7 @@ export const callLLM = async (
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: modelName,
       messages: [{ role: 'user', content: prompt }],
     }),
   });

@@ -5,7 +5,7 @@ import type { Course } from '../types';
 import { chunkText } from '../lib/chunker';
 
 export const useOntology = () => {
-  const { apiKey, setActiveCourse } = useStore();
+  const { apiKey, modelName, setActiveCourse } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,22 +14,29 @@ export const useOntology = () => {
     setError(null);
     try {
       const chunks = chunkText(text);
-      const firstChunk = chunks.length > 0 ? chunks[0] : '';
+      const fullText = chunks.join('\n');
 
-      const prompt = `Based on the following text, create a syllabus with concepts. Format the output as a JSON object matching this TypeScript interface:
+      const prompt = `Based on the following text, create a syllabus with concepts. Format the output as a JSON object representing a directed prerequisite graph matching this TypeScript interface:
       {
-        id: string,
-        title: string,
-        concepts: [
-          { id: string, title: string, content: string, status: "pending" | "in-progress" | "completed" }
+        "id": "course-id",
+        "title": "Course Name",
+        "concepts": [
+          {
+            "id": "c1",
+            "title": "Concept Name",
+            "content": "Detailed text content extracted from the source material",
+            "prerequisites": ["list-of-parent-concept-ids"],
+            "status": "pending"
+          }
         ]
       }
 
+      Make sure the output is ONLY valid JSON.
       Text:
-      ${firstChunk}
+      ${fullText}
       `;
 
-      const response = await callLLM(prompt, apiKey);
+      const response = await callLLM(prompt, apiKey, modelName);
       // Clean up potential markdown formatting
       const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
       const course: Course = JSON.parse(cleanJson);

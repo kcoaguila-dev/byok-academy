@@ -8,7 +8,7 @@ interface QuizFeedback {
 }
 
 export const ActiveLearning: React.FC = () => {
-  const { apiKey, activeCourse, activeConcept, setActiveConcept, completeActiveConcept } = useStore();
+  const { apiKey, modelName, activeCourse, activeConcept, setActiveConcept, completeActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
@@ -28,7 +28,7 @@ Example: ["Question 1?", "Question 2?", "Question 3?"]
 
 Context:
 ${context}`;
-      const response = await callLLM(prompt, apiKey);
+      const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsedQuestions = JSON.parse(cleanJson);
       if (Array.isArray(parsedQuestions) && parsedQuestions.length === 3) {
@@ -87,7 +87,7 @@ Is this answer correct based on the context? If not, provide a 1-sentence hint.
 Output ONLY a JSON object matching this schema, without markdown formatting:
 { "isCorrect": boolean, "hint": string }`;
 
-      const response = await callLLM(prompt, apiKey);
+      const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsedFeedback = JSON.parse(cleanJson) as QuizFeedback;
 

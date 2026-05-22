@@ -4,15 +4,24 @@ import { useStore } from '../store/useStore';
 
 export const BYOKSettings: React.FC = () => {
   const { apiKey, saveApiKey, removeApiKey } = useBYOK();
+  const { resetStore, modelName, setModelName } = useStore();
   const [inputKey, setInputKey] = useState(apiKey);
+  const [inputModel, setInputModel] = useState(modelName);
   const [isOpen, setIsOpen] = useState(false);
+
+  // Update local state when opening settings if modelName changed externally
+  React.useEffect(() => {
+    if (isOpen) {
+      setInputKey(apiKey || '');
+      setInputModel(modelName);
+    }
+  }, [isOpen, apiKey, modelName]);
 
   const handleSave = () => {
     saveApiKey(inputKey);
+    setModelName(inputModel);
     setIsOpen(false);
   };
-
-  const { resetStore } = useStore();
 
   const handleRemove = () => {
     removeApiKey();
@@ -45,6 +54,7 @@ export const BYOKSettings: React.FC = () => {
           Enter your API key. Keys are stored locally in your browser.
         </p>
 
+        <label className="block text-sm font-medium text-gray-700 mb-1">OpenAI API Key</label>
         <input
           type="password"
           value={inputKey}
@@ -52,6 +62,18 @@ export const BYOKSettings: React.FC = () => {
           placeholder="sk-..."
           className="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+
+        <label className="block text-sm font-medium text-gray-700 mb-1">Target Model</label>
+        <select
+          value={inputModel}
+          onChange={(e) => setInputModel(e.target.value)}
+          className="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="gpt-4o-mini">GPT-4o Mini (Default, Fast)</option>
+          <option value="gpt-4o">GPT-4o (Advanced)</option>
+          <option value="gpt-4-turbo">GPT-4 Turbo</option>
+          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+        </select>
 
         <div className="flex justify-between items-center mt-6">
           <button

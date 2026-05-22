@@ -1,73 +1,56 @@
-# React + TypeScript + Vite
+# OntoLearn
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**A 100% serverless, privacy-first, BYOK (Bring Your Own Key) AI learning platform.**
 
-Currently, two official plugins are available:
+OntoLearn transforms your PDF documents into an interactive, AI-driven syllabus. By processing everything directly in your browser, it ensures your data remains yours—secure, private, and fully under your control.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🏗 The Architecture (How it Works)
 
-## React Compiler
+OntoLearn is built with a fundamentally different approach to modern AI applications: **There is NO backend database or server.**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **Local Processing:** All PDF parsing happens locally in your browser using Web Workers.
+*   **Local State:** Your syllabus, progress, and settings are preserved entirely locally via IndexedDB (powered by `localforage`) and managed with `Zustand`.
+*   **Direct AI Communication:** The application communicates directly with the official LLM endpoints (e.g., OpenAI) from your browser.
 
-## Expanding the ESLint configuration
+## ✨ Key Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+*   **Dynamic Syllabus Generation:** Upload a PDF and watch as the AI extracts core concepts and generates a structured, directed prerequisite graph tailored to your material.
+*   **Multi-Chunk PDF Parsing:** Robust client-side parsing that seamlessly handles large documents by intelligently chunking text.
+*   **Split-Screen Active Learning UI:** Read the source material on the left while actively testing your knowledge on the right.
+*   **Real-Time AI Quiz Grading Loop:** Automatically generates quizzes based on the current concept, evaluates your answers, and provides instant, constructive feedback and hints.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🔒 Security & Privacy
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Your privacy is the core design principle of OntoLearn.
+*   **No Centralized Servers:** Your API keys and document texts are **NEVER** sent to a centralized application server.
+*   **Direct to Provider:** Data is only transmitted directly to the official LLM endpoints (e.g., OpenAI API) according to their secure protocols.
+*   **BYOK (Bring Your Own Key):** You provide your own API key, which is securely stored only in your browser's local storage.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🛠 Tech Stack
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+*   **Build Tool:** [Vite](https://vitejs.dev/)
+*   **Framework:** [React](https://reactjs.org/)
+*   **Language:** [TypeScript](https://www.typescriptlang.org/)
+*   **Styling:** [TailwindCSS](https://tailwindcss.com/)
+*   **State Management:** [Zustand](https://zustand-demo.pmnd.rs/)
+*   **PDF Parsing:** [pdfjs-dist](https://mozilla.github.io/pdf.js/)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🚀 Getting Started (Local Dev)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+To run OntoLearn locally, clone the repository and follow these steps:
+
+1.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+2.  **Start the local development server:**
+    ```bash
+    npm run dev
+    ```
+
+3.  Open your browser and navigate to the local URL provided in your terminal (usually `http://localhost:5173`).
+
+## ☁️ Deployment
+
+OntoLearn is configured for seamless deployment. It automatically builds and deploys to **GitHub Pages** via GitHub Actions whenever changes are merged into the `main` branch.

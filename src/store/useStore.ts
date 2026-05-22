@@ -7,6 +7,10 @@ interface AppState {
   setApiKey: (key: string) => void;
   modelName: string;
   setModelName: (model: string) => void;
+  useLocalServer: boolean;
+  setUseLocalServer: (use: boolean) => void;
+  localServerUrl: string;
+  setLocalServerUrl: (url: string) => void;
   parsedText: string[];
   setParsedText: (text: string[]) => void;
   activeCourse: Course | null;
@@ -30,6 +34,14 @@ export const useStore = create<AppState>((set, get) => {
     if (model) set({ modelName: model });
   });
 
+  localforage.getItem<boolean>('useLocalServer').then((use) => {
+    if (use !== null) set({ useLocalServer: use });
+  });
+
+  localforage.getItem<string>('localServerUrl').then((url) => {
+    if (url) set({ localServerUrl: url });
+  });
+
   return {
     apiKey: '',
     setApiKey: (key) => set({ apiKey: key }),
@@ -37,6 +49,16 @@ export const useStore = create<AppState>((set, get) => {
     setModelName: (model) => {
       localforage.setItem('modelName', model);
       set({ modelName: model });
+    },
+    useLocalServer: false,
+    setUseLocalServer: (use) => {
+      localforage.setItem('useLocalServer', use);
+      set({ useLocalServer: use });
+    },
+    localServerUrl: '',
+    setLocalServerUrl: (url) => {
+      localforage.setItem('localServerUrl', url);
+      set({ localServerUrl: url });
     },
     parsedText: [],
     setParsedText: (text) => {

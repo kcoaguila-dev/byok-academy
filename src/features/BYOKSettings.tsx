@@ -4,9 +4,11 @@ import { useStore } from '../store/useStore';
 
 export const BYOKSettings: React.FC = () => {
   const { apiKey, saveApiKey, removeApiKey } = useBYOK();
-  const { resetStore, modelName, setModelName } = useStore();
+  const { resetStore, modelName, setModelName, useLocalServer, setUseLocalServer, localServerUrl, setLocalServerUrl } = useStore();
   const [inputKey, setInputKey] = useState(apiKey);
   const [inputModel, setInputModel] = useState(modelName);
+  const [inputUseLocal, setInputUseLocal] = useState(useLocalServer);
+  const [inputLocalUrl, setInputLocalUrl] = useState(localServerUrl);
   const [isOpen, setIsOpen] = useState(false);
 
   // Update local state when opening settings if modelName changed externally
@@ -14,12 +16,16 @@ export const BYOKSettings: React.FC = () => {
     if (isOpen) {
       setInputKey(apiKey || '');
       setInputModel(modelName);
+      setInputUseLocal(useLocalServer);
+      setInputLocalUrl(localServerUrl);
     }
-  }, [isOpen, apiKey, modelName]);
+  }, [isOpen, apiKey, modelName, useLocalServer, localServerUrl]);
 
   const handleSave = () => {
     saveApiKey(inputKey);
     setModelName(inputModel);
+    setUseLocalServer(inputUseLocal);
+    setLocalServerUrl(inputLocalUrl);
     setIsOpen(false);
   };
 
@@ -74,6 +80,34 @@ export const BYOKSettings: React.FC = () => {
           <option value="gpt-4-turbo">GPT-4 Turbo</option>
           <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
         </select>
+
+        <div className="mb-4">
+          <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+            <input
+              type="checkbox"
+              checked={inputUseLocal}
+              onChange={(e) => setInputUseLocal(e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span>Route to Local Network Server</span>
+          </label>
+        </div>
+
+        {inputUseLocal && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Local Server URL</label>
+            <input
+              type="text"
+              value={inputLocalUrl}
+              onChange={(e) => setInputLocalUrl(e.target.value)}
+              placeholder="http://localhost:11434/v1/chat/completions"
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Ensure your local server is configured for CORS to allow cross-origin requests from GitHub Pages.
+            </p>
+          </div>
+        )}
 
         <div className="flex justify-between items-center mt-6">
           <button

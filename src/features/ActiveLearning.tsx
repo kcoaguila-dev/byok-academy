@@ -8,8 +8,9 @@ interface QuizFeedback {
 }
 
 export const ActiveLearning: React.FC = () => {
-  const { apiKey, activeConcept, completeActiveConcept } = useStore();
+  const { apiKey, activeCourse, activeConcept, setActiveConcept, completeActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
   const [feedback, setFeedback] = useState<(QuizFeedback | null)[]>([null, null, null]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -107,18 +108,60 @@ Output ONLY a JSON object matching this schema, without markdown formatting:
     }
   };
 
-  if (!activeConcept) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 text-gray-400">
-        Please select a concept to begin learning.
-      </div>
-    );
-  }
+  if (!activeCourse) return null;
 
   return (
-    <div className="flex w-full h-screen bg-white">
-      {/* Left Column: Reader */}
-      <div className="w-1/2 h-full overflow-y-auto border-r border-gray-200 p-8">
+    <div className="flex w-full h-screen bg-white overflow-hidden">
+      {/* Sidebar: Course Navigation */}
+      {isSidebarOpen && (
+        <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+          <div className="p-4 border-b border-gray-200 bg-white">
+            <h2 className="font-bold text-gray-800 truncate">{activeCourse.title}</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {activeCourse.concepts.map((c) => {
+              const isActive = activeConcept?.id === c.id;
+              const isCompleted = c.status === 'completed';
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveConcept(c)}
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${
+                    isActive
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <span className="truncate pr-2">{c.title}</span>
+                  {isCompleted ? (
+                    <span className="text-green-500 font-bold">✓</span>
+                  ) : (
+                    <span className="text-gray-300">○</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="bg-white border-b border-gray-200 p-2 flex items-center">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+
+        {activeConcept ? (
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Column: Reader */}
+            <div className="w-1/2 h-full overflow-y-auto border-r border-gray-200 p-8">
         <article className="prose max-w-none">
           <h1 className="text-3xl font-bold mb-6 text-gray-900">{activeConcept.title}</h1>
           <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
@@ -181,6 +224,13 @@ Output ONLY a JSON object matching this schema, without markdown formatting:
             <div className="text-gray-500">No questions available.</div>
           )}
         </div>
+      </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400">
+            Please select a concept from the sidebar to begin learning.
+          </div>
+        )}
       </div>
     </div>
   );

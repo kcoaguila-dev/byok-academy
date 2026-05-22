@@ -12,6 +12,7 @@ interface AppState {
   activeConcept: Concept | null;
   setActiveConcept: (concept: Concept | null) => void;
   completeActiveConcept: () => void;
+  resetStore: () => void;
 }
 
 export const useStore = create<AppState>((set, get) => {
@@ -53,6 +54,14 @@ export const useStore = create<AppState>((set, get) => {
       set({
         activeCourse: updatedCourse,
         activeConcept: updatedConcept
+      });
+    },
+    resetStore: async () => {
+      await localforage.clear();
+      set({
+        parsedText: [],
+        activeCourse: null,
+        activeConcept: null
       });
     }
   };

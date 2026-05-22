@@ -8,7 +8,7 @@ export interface Concept {
   id: string;
   title: string;
   content: string;
-  prerequisites: string[];
+  prerequisites?: string[];
   status: 'pending' | 'in-progress' | 'completed';
 }
 

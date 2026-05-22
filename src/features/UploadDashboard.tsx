@@ -170,3 +170,4 @@ export const UploadDashboard: React.FC = () => {
       </div>
     </div>
   );
+};

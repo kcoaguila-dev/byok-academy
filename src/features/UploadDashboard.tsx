@@ -3,6 +3,7 @@ import { extractTextFromPdf } from '../lib/pdfParser';
 import { useStore } from '../store/useStore';
 import { useOntology } from '../hooks/useOntology';
 import { useBYOK } from '../hooks/useBYOK';
+import { indexDocument } from '../lib/rag';
 
 export const UploadDashboard: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
@@ -26,8 +27,16 @@ export const UploadDashboard: React.FC = () => {
     setIsProcessing(true);
     setProgress(0);
     try {
+      // 1. Extract text from PDF
       const textArray = await extractTextFromPdf(file, (p) => setProgress(p));
       setParsedText(textArray);
+
+      // 2. Index the extracted text into the Local RAG pipeline
+      // We will re-use the progress bar to show indexing progress
+      setProgress(0);
+      await indexDocument(textArray, (p) => setProgress(p));
+
+      // 3. Generate the syllabus
       // For generateSyllabus, we'll join the array into a single string for now.
       // Another step will handle useOntology if necessary, but this keeps it working.
       await generateSyllabus(textArray.join('\n\n'));
@@ -81,7 +90,7 @@ export const UploadDashboard: React.FC = () => {
           <div className="space-y-4 w-full max-w-md mx-auto">
             <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
             <p className="text-lg text-gray-700 font-medium">
-              {isProcessing ? 'Extracting text from PDF...' : 'Generating syllabus...'}
+              {isProcessing ? 'Processing Document...' : 'Generating syllabus...'}
             </p>
             {isProcessing && (
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">

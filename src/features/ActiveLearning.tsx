@@ -43,10 +43,10 @@ ${context}`;
 
   useEffect(() => {
 
-    if (activeConcept?.content && apiKey) {
+    if (activeConcept?.content && apiKey && activeConcept.status !== 'completed') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       generateQuestions(activeConcept.content);
-    } else {
+    } else if (!activeConcept?.content || !apiKey) {
 
       setQuestions([]);
 
@@ -55,7 +55,7 @@ ${context}`;
       setFeedback([null, null, null]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConcept, apiKey]);
+  }, [activeConcept?.id, apiKey]);
 
   const handleAnswerChange = (index: number, val: string) => {
     const newAnswers = [...answers];

@@ -63,7 +63,7 @@ export const UploadDashboard: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to OntoLearn</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to BYOK Academy</h1>
         <p className="text-lg text-gray-600 max-w-2xl">
           Upload your PDF materials and let our AI generate a structured syllabus and active learning environment for you. Completely private, client-side processing.
         </p>

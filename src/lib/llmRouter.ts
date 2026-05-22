@@ -1,9 +1,15 @@
+import { useStore } from '../store/useStore';
+
 export const callLLM = async (
   prompt: string,
   apiKey: string,
   modelName: string = 'gpt-4o-mini'
 ): Promise<string> => {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const { useLocalServer, localServerUrl } = useStore.getState();
+
+  const endpoint = useLocalServer && localServerUrl ? localServerUrl : 'https://api.openai.com/v1/chat/completions';
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

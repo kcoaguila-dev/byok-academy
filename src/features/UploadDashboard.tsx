@@ -3,14 +3,24 @@ import { extractTextFromPdf } from '../lib/pdfParser';
 import { useStore } from '../store/useStore';
 import { useOntology } from '../hooks/useOntology';
 import { useBYOK } from '../hooks/useBYOK';
+import { chunkText } from '../lib/chunker';
+import { indexDocument, searchIndex } from '../lib/search';
 
 export const UploadDashboard: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{text: string; documentId: string}[]>([]);
   const { setParsedText } = useStore();
   const { generateSyllabus, loading, error } = useOntology();
   const { apiKey } = useBYOK();
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    const results = await searchIndex(searchQuery);
+    setSearchResults(results as unknown as {text: string; documentId: string}[]);
+  };
 
   const processFile = useCallback(async (file: File) => {
     if (file.type !== 'application/pdf') {
@@ -28,9 +38,14 @@ export const UploadDashboard: React.FC = () => {
     try {
       const textArray = await extractTextFromPdf(file, (p) => setProgress(p));
       setParsedText(textArray);
+
+      const fullText = textArray.join('\n\n');
+      const chunks = chunkText(fullText);
+      await indexDocument(chunks, file.name);
+
       // For generateSyllabus, we'll join the array into a single string for now.
       // Another step will handle useOntology if necessary, but this keeps it working.
-      await generateSyllabus(textArray.join('\n\n'));
+      await generateSyllabus(fullText);
     } catch (err) {
       console.error(err);
       alert('Error processing file');
@@ -139,6 +154,39 @@ export const UploadDashboard: React.FC = () => {
           <p className="font-mono text-sm mt-1">{error}</p>
         </div>
       )}
+
+      {/* Basic UI for testing local RAG search */}
+      <div className="mt-8 w-full max-w-2xl">
+        <h2 className="text-2xl font-bold mb-4">Test Local Search</h2>
+        <div className="flex space-x-2 mb-4">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search within indexed PDF..."
+            className="flex-1 p-2 border border-gray-300 rounded"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <button
+            onClick={handleSearch}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Search
+          </button>
+        </div>
+
+        {searchResults.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Top Results:</h3>
+            {searchResults.map((result, idx) => (
+              <div key={idx} className="p-4 border border-gray-200 rounded bg-gray-50">
+                <p className="text-sm text-gray-500 mb-2">Doc: {result.documentId}</p>
+                <p className="text-gray-800 text-sm whitespace-pre-wrap">{result.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

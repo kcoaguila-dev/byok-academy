@@ -14,9 +14,15 @@ export const BYOKSettings: React.FC = () => {
   // Update local state when opening settings if modelName changed externally
   React.useEffect(() => {
     if (isOpen) {
+      // Intentionally syncing local state with store on open.
+      // Ignoring lint rule because we need this to reset inputs when modal opens.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputKey(apiKey || '');
+
       setInputModel(modelName);
+
       setInputUseLocal(useLocalServer);
+
       setInputLocalUrl(localServerUrl);
     }
   }, [isOpen, apiKey, modelName, useLocalServer, localServerUrl]);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { callLLM } from '../lib/llmRouter';
+import { sanitizeInput } from '../lib/sanitize';
 
 interface QuizFeedback {
   isCorrect: boolean;
@@ -78,10 +79,14 @@ ${context}`;
     setGradingIndices(newGrading);
 
     try {
+      const sanitizedAnswer = sanitizeInput(answers[index]);
       const prompt = `Context: ${activeConcept.content}
 
 Question: ${questions[index]}
-Student Answer: ${answers[index]}
+Student Answer:
+\`\`\`
+${sanitizedAnswer}
+\`\`\`
 
 Is this answer correct based on the context? If not, provide a 1-sentence hint.
 Output ONLY a JSON object matching this schema, without markdown formatting:

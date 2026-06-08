@@ -7,6 +7,14 @@ interface QuizFeedback {
   hint: string;
 }
 
+const sanitizePromptInput = (input: string): string => {
+  if (!input) return '';
+  return input
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/`/g, '\\`');
+};
+
 export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, activeConcept, setActiveConcept, completeActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
@@ -22,12 +30,14 @@ export const ActiveLearning: React.FC = () => {
     setAnswers(['', '', '']);
     setFeedback([null, null, null]);
     try {
+      const sanitizedContext = sanitizePromptInput(context);
       const prompt = `Based on the following context, generate exactly 3 short, open-ended questions to test the student's understanding.
 Format the output as a JSON array of strings. Do not include markdown blocks.
 Example: ["Question 1?", "Question 2?", "Question 3?"]
 
-Context:
-${context}`;
+<context>
+${sanitizedContext}
+</context>`;
       const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsedQuestions = JSON.parse(cleanJson);
@@ -78,14 +88,25 @@ ${context}`;
     setGradingIndices(newGrading);
 
     try {
-      const prompt = `Context: ${activeConcept.content}
+      const sanitizedContext = sanitizePromptInput(activeConcept.content);
+      const sanitizedQuestion = sanitizePromptInput(questions[index]);
+      const sanitizedAnswer = sanitizePromptInput(answers[index]);
 
-Question: ${questions[index]}
-Student Answer: ${answers[index]}
-
-Is this answer correct based on the context? If not, provide a 1-sentence hint.
+      const prompt = `Is the student's answer correct based on the provided context? If not, provide a 1-sentence hint.
 Output ONLY a JSON object matching this schema, without markdown formatting:
-{ "isCorrect": boolean, "hint": string }`;
+{ "isCorrect": boolean, "hint": string }
+
+<context>
+${sanitizedContext}
+</context>
+
+<question>
+${sanitizedQuestion}
+</question>
+
+<student_answer>
+${sanitizedAnswer}
+</student_answer>`;
 
       const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();

@@ -1,22 +1,18 @@
-export const chunkText = (text: string, maxChunkSize: number = 4000): string[] => {
+export const chunkText = (text: string, maxChunkSize: number = 500, overlap: number = 50): string[] => {
   const chunks: string[] = [];
-  const paragraphs = text.split('\n\n');
 
-  let currentChunk = '';
+  if (!text || text.length === 0) return chunks;
 
-  for (const paragraph of paragraphs) {
-    if (currentChunk.length + paragraph.length > maxChunkSize) {
-      if (currentChunk.length > 0) {
-        chunks.push(currentChunk.trim());
-      }
-      currentChunk = paragraph + '\n\n';
-    } else {
-      currentChunk += paragraph + '\n\n';
-    }
+  if (text.length <= maxChunkSize) {
+      chunks.push(text);
+      return chunks;
   }
 
-  if (currentChunk.trim().length > 0) {
-    chunks.push(currentChunk.trim());
+  let i = 0;
+  while (i < text.length) {
+      const chunk = text.substring(i, i + maxChunkSize);
+      chunks.push(chunk);
+      i += maxChunkSize - overlap;
   }
 
   return chunks;

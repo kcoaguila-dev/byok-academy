@@ -33,7 +33,7 @@ export const useOntology = () => {
 
       Make sure the output is ONLY valid JSON.
       Text:
-      ${fullText}
+      ${JSON.stringify(fullText)}
       `;
 
       const response = await callLLM(prompt, apiKey, modelName);

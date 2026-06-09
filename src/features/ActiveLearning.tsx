@@ -31,10 +31,15 @@ export const ActiveLearning: React.FC = () => {
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [gradingIndices, setGradingIndices] = useState<boolean[]>([false, false, false]);
   const [questionsError, setQuestionsError] = useState(false);
+  const [showCourseComplete, setShowCourseComplete] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
     setActiveDocumentId(activeCourse?.id ?? null);
+  }, [activeCourse?.id]);
+
+  useEffect(() => {
+    setShowCourseComplete(false);
   }, [activeCourse?.id]);
 
   const generateQuestions = async (context: string) => {
@@ -163,7 +168,7 @@ ${sanitizedAnswer}
           showToast('Concept mastered!', 'success');
           useStore.getState().setActiveConcept(nextConcept);
         } else {
-          showToast('Course complete! Great work.', 'success');
+          setShowCourseComplete(true);
         }
       }
     } catch (e) {
@@ -179,6 +184,46 @@ ${sanitizedAnswer}
 
   return (
     <div className="flex w-full h-screen bg-white overflow-hidden">
+      {showCourseComplete && (
+        <div className="fixed inset-0 z-50 bg-green-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-10 max-w-lg w-full text-center border border-green-100">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-4xl text-green-600 font-bold">✓</span>
+            </div>
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Course Complete!</h1>
+            <p className="text-lg text-gray-600 mb-8">
+              {activeCourse.title}
+              <br />
+              <span className="text-sm font-medium text-green-600 mt-2 block">
+                {activeCourse.concepts.length} of {activeCourse.concepts.length} concepts mastered
+              </span>
+            </p>
+
+            <div className="w-full bg-gray-200 rounded-full h-3 mb-10 overflow-hidden">
+              <div className="bg-green-500 h-3 rounded-full transition-all duration-1000 ease-out w-full"></div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => {
+                  setActiveCourse(null);
+                  setShowCourseComplete(false);
+                }}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                Back to Library
+              </button>
+              <button
+                onClick={() => setShowCourseComplete(false)}
+                className="px-6 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+              >
+                Review Concepts
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isSidebarOpen && (
         <>
           <div className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />

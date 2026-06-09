@@ -23,8 +23,16 @@ export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [sourceChunks, setSourceChunks] = useState<string[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSidebarOpen(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
   const [feedback, setFeedback] = useState<(QuizFeedback | null)[]>([null, null, null]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -179,8 +187,10 @@ ${sanitizedAnswer}
   return (
     <div className="flex w-full h-screen bg-white overflow-hidden">
       {isSidebarOpen && (
-        <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
-          <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
+        <>
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+          <div className="fixed inset-y-0 left-0 z-40 w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 flex flex-col h-full md:relative md:z-auto">
+            <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
             <h2 className="font-bold text-gray-800 truncate" title={activeCourse.title}>{activeCourse.title}</h2>
             <button onClick={() => setViewMode(v => v === 'list' ? 'graph' : 'list')} className="text-xs text-blue-600 hover:underline ml-2 whitespace-nowrap">
               {viewMode === 'list' ? 'Graph View' : 'List View'}
@@ -208,11 +218,15 @@ ${sanitizedAnswer}
             )}
           </div>
         </div>
+        </>
       )}
       <div className="flex-1 flex flex-col min-w-0">
         <div className="bg-white border-b border-gray-200 p-2 flex items-center gap-4">
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors md:hidden">
+            Concepts
           </button>
           <button onClick={() => setActiveCourse(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex items-center">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -220,8 +234,8 @@ ${sanitizedAnswer}
           </button>
         </div>
         {activeConcept ? (
-          <div className="flex flex-1 overflow-hidden">
-            <div className="w-1/2 h-full overflow-y-auto border-r border-gray-200 p-8">
+          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+            <div className="w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto md:border-r border-b md:border-b-0 border-gray-200 p-8">
               <article className="prose max-w-none">
                 <h1 className="text-3xl font-bold mb-6 text-gray-900">{activeConcept.title}</h1>
                 <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
@@ -229,7 +243,7 @@ ${sanitizedAnswer}
                 </div>
               </article>
             </div>
-            <div className="w-1/2 h-full overflow-y-auto bg-gray-50 p-8">
+            <div className="w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto bg-gray-50 p-8">
               <div className="max-w-2xl mx-auto">
                 <h2 className="text-2xl font-bold mb-2 text-gray-800">Knowledge Check</h2>
                 <p className="text-gray-600 mb-8">Test your understanding of {activeConcept.title}</p>

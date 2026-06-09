@@ -154,7 +154,12 @@ ${sanitizedAnswer}
             return prereq?.status === 'completed';
           });
         });
-        if (nextConcept) useStore.getState().setActiveConcept(nextConcept);
+        showToast('Concept mastered!', 'success');
+        if (nextConcept) {
+          useStore.getState().setActiveConcept(nextConcept);
+        } else {
+          showToast('Course complete! Great work.', 'success');
+        }
       }
     } catch (e) {
       showToast('Grading failed. Please try again.', 'error');
@@ -184,7 +189,7 @@ ${sanitizedAnswer}
               activeCourse.concepts.map((c) => {
                 const isActive = activeConcept?.id === c.id;
                 const isCompleted = c.status === 'completed';
-                const isLocked = !!c.prerequisites?.some(prereqId => {
+                const isLocked = !isCompleted && !!c.prerequisites?.some(prereqId => {
                   const prereq = activeCourse.concepts.find(p => p.id === prereqId);
                   return prereq && prereq.status !== 'completed';
                 });
@@ -230,6 +235,30 @@ ${sanitizedAnswer}
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <p className="text-red-500">Failed to load questions.</p>
                     <button onClick={() => activeConcept?.content && generateQuestions(activeConcept.content)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Retry</button>
+                  </div>
+                ) : activeConcept.status === 'completed' ? (
+                  <div className="flex flex-col items-center justify-center space-y-6 py-8">
+                    <div className="bg-green-100 text-green-800 px-6 py-4 rounded-xl shadow-sm border border-green-200 flex items-center gap-3">
+                      <span className="text-2xl font-bold">✓</span>
+                      <span className="text-lg font-semibold">Concept Mastered</span>
+                    </div>
+                    <p className="text-gray-600 text-center">You've completed all knowledge checks for this concept.</p>
+                    <button onClick={() => {
+                      if (!activeCourse) return;
+                      const updatedConcepts = activeCourse.concepts.map(c =>
+                        c.id === activeConcept.id ? { ...c, status: 'pending' as const } : c
+                      );
+                      const updatedCourse = { ...activeCourse, concepts: updatedConcepts };
+                      const updatedConcept = { ...activeConcept, status: 'pending' as const };
+                      setActiveCourse(updatedCourse);
+                      setActiveConcept(updatedConcept);
+                      localforage.setItem('activeCourse', updatedCourse);
+                      if (activeConcept.content) {
+                        generateQuestions(activeConcept.content);
+                      }
+                    }} className="px-6 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition">
+                      Practice Again
+                    </button>
                   </div>
                 ) : questions.length > 0 ? (
                   <div className="space-y-8">

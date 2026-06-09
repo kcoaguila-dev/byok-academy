@@ -4,9 +4,11 @@ import { extractTextFromPdf } from '../lib/pdfParser';
 import { chunkText } from '../lib/chunker';
 import { indexDocument } from '../lib/search';
 import { useOntology } from '../hooks/useOntology';
+import { useToast } from '../components/Toast';
 
 export const CourseLibrary: React.FC = () => {
   const { apiKey, courses, selectCourse, deleteCourse, setParsedText } = useStore();
+  const { showToast } = useToast();
   const { generateSyllabus, loading, error } = useOntology();
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -14,12 +16,12 @@ export const CourseLibrary: React.FC = () => {
 
   const processFile = useCallback(async (file: File) => {
     if (file.type !== 'application/pdf') {
-      alert('Please upload a PDF file.');
+      showToast('Please upload a PDF file.', 'error');
       return;
     }
 
     if (!apiKey) {
-      alert('Please set your API key first.');
+      showToast('Please set your API key first.', 'error');
       return;
     }
 
@@ -37,8 +39,7 @@ export const CourseLibrary: React.FC = () => {
         generateSyllabus(fullText)
       ]);
     } catch (err) {
-      console.error(err);
-      alert('Error processing file');
+      showToast('Error processing file', 'error');
     } finally {
       setIsProcessing(false);
     }

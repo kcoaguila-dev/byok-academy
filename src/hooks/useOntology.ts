@@ -5,7 +5,7 @@ import type { Course } from '../types';
 import { chunkText } from '../lib/chunker';
 
 export const useOntology = () => {
-  const { apiKey, modelName, setActiveCourse, addCourse } = useStore();
+  const { apiKey, modelName, setActiveCourse } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +40,7 @@ export const useOntology = () => {
       // Clean up potential markdown formatting
       const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
       const course: Course = JSON.parse(cleanJson);
-      addCourse(course);
+      useStore.getState().addCourse(course);
       setActiveCourse(course);
     } catch (err) {
       if (err instanceof Error) {

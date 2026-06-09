@@ -6,16 +6,11 @@ import { ToastProvider } from './components/Toast';
 
 function App() {
   const { activeCourse } = useStore();
-
   return (
     <ToastProvider>
       <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
         <BYOKSettings />
-        {!activeCourse ? (
-          <CourseLibrary />
-        ) : (
-          <ActiveLearning />
-        )}
+        {!activeCourse ? <CourseLibrary /> : <ActiveLearning />}
       </div>
     </ToastProvider>
   );

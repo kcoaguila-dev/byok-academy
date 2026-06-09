@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { callLLM } from '../lib/llmRouter';
 import { useStore } from '../store/useStore';
 import type { Course } from '../types';
+import { chunkText } from '../lib/chunker';
 
 export const useOntology = () => {
   const { apiKey, modelName, setActiveCourse } = useStore();
@@ -12,6 +13,9 @@ export const useOntology = () => {
     setLoading(true);
     setError(null);
     try {
+      const chunks = chunkText(text);
+      const fullText = chunks.join('\n');
+
       const prompt = `Based on the following text, create a syllabus with concepts. Format the output as a JSON object representing a directed prerequisite graph matching this TypeScript interface:
       {
         "id": "course-id",
@@ -29,7 +33,7 @@ export const useOntology = () => {
 
       Make sure the output is ONLY valid JSON.
       Text:
-      ${text}
+      ${JSON.stringify(fullText)}
       `;
 
       const response = await callLLM(prompt, apiKey, modelName);

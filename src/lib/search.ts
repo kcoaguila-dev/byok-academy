@@ -97,15 +97,22 @@ export const deleteDocumentIndex = async (documentId: string): Promise<void> => 
   }
 };
 
-export const indexDocument = async (chunks: string[], documentId: string): Promise<void> => {
+export const indexDocument = async (chunks: string[], documentId: string, onProgress?: (percent: number) => void): Promise<void> => {
   const db = await initIndex();
   await deleteDocumentIndex(documentId);
   const extract = await getExtractor();
+
+  let processed = 0;
+  const total = chunks.length;
 
   const documents = await Promise.all(
     chunks.map(async (chunk) => {
       const output = await extract(chunk, { pooling: 'mean', normalize: true });
       const embedding = Array.from(output.data);
+      processed++;
+      if (onProgress) {
+        onProgress(Math.round((processed / total) * 100));
+      }
       return {
         text: chunk,
         documentId,
@@ -123,6 +130,10 @@ export const indexDocument = async (chunks: string[], documentId: string): Promi
     await storageAdapter.set(INDEX_KEY, serializedData);
   } catch (error) {
     console.error('Failed to persist Orama index to localforage', error);
+  }
+
+  if (onProgress) {
+    onProgress(100);
   }
 };
 

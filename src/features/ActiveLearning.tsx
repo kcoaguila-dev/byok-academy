@@ -154,8 +154,8 @@ ${sanitizedAnswer}
             return prereq?.status === 'completed';
           });
         });
-        showToast('Concept mastered!', 'success');
         if (nextConcept) {
+          showToast('Concept mastered!', 'success');
           useStore.getState().setActiveConcept(nextConcept);
         } else {
           showToast('Course complete! Great work.', 'success');

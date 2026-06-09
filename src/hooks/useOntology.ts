@@ -46,6 +46,7 @@ export const useOntology = () => {
         // Clean up potential markdown formatting
         const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
         const course: Course = JSON.parse(cleanJson);
+        useStore.getState().addCourse(course);
         setActiveCourse(course);
         break; // Success, exit loop
       } catch (err) {

@@ -21,8 +21,7 @@ const sanitizePromptInput = (input: string): string => {
 };
 
 export const ActiveLearning: React.FC = () => {
-  const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept, completeActiveConcept } = useStore();
-  const { apiKey, modelName, activeCourse, activeConcept, setActiveConcept } = useStore();
+  const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');

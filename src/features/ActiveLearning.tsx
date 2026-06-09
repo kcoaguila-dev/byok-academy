@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { callLLM } from '../lib/llmRouter';
 
 import { ConceptGraph } from './ConceptGraph';
+import localforage from 'localforage';
 import { useToast } from '../components/Toast';
 
 interface QuizFeedback {
@@ -19,7 +20,7 @@ const sanitizePromptInput = (input: string): string => {
 };
 
 export const ActiveLearning: React.FC = () => {
-  const { apiKey, modelName, activeCourse, activeConcept, setActiveConcept, completeActiveConcept } = useStore();
+  const { apiKey, modelName, activeCourse, activeConcept, setActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
@@ -127,8 +128,28 @@ ${sanitizedAnswer}
       setFeedback(newFeedback);
 
       // Mastery Tracking: if all 3 questions are answered correctly
-      if (newFeedback.filter(fb => fb?.isCorrect).length === 3) {
-        completeActiveConcept();
+      if (newFeedback.filter(fb => fb?.isCorrect).length === 3 && activeCourse) {
+        const updatedConcepts = activeCourse.concepts.map(c =>
+          c.id === activeConcept.id ? { ...c, status: 'completed' as const } : c
+        );
+
+        const updatedCourse = { ...activeCourse, concepts: updatedConcepts };
+
+        useStore.getState().setActiveCourse(updatedCourse);
+        localforage.setItem('activeCourse', updatedCourse);
+
+        const nextConcept = updatedConcepts.find(c => {
+          if (c.status === 'completed') return false;
+          if (!c.prerequisites || c.prerequisites.length === 0) return true;
+          return c.prerequisites.every(prereqId => {
+            const prereq = updatedConcepts.find(p => p.id === prereqId);
+            return prereq?.status === 'completed';
+          });
+        });
+
+        if (nextConcept) {
+          useStore.getState().setActiveConcept(nextConcept);
+        }
       }
     } catch (e) {
       showToast('Grading failed. Please try again.', 'error');
@@ -180,6 +201,37 @@ ${sanitizedAnswer}
                 );
               })
             )}
+            {activeCourse.concepts.map((c) => {
+              const isActive = activeConcept?.id === c.id;
+              const isCompleted = c.status === 'completed';
+              const isLocked = !!c.prerequisites?.some(prereqId => {
+                const prereq = activeCourse.concepts.find(p => p.id === prereqId);
+                return prereq && prereq.status !== 'completed';
+              });
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveConcept(c)}
+                  disabled={isLocked}
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${
+                    isLocked
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : isActive
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <span className="truncate pr-2">{c.title}</span>
+                  {isCompleted ? (
+                    <span className="text-green-500 font-bold">✓</span>
+                  ) : isLocked ? (
+                    <span className="text-gray-400">🔒</span>
+                  ) : (
+                    <span className="text-gray-300">○</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

@@ -85,14 +85,36 @@ export const CourseLibrary: React.FC = () => {
         </p>
       </div>
 
+      {!apiKey && (
+        <div className="w-full max-w-4xl bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-md mb-6 flex flex-col sm:flex-row items-center justify-between">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>An OpenAI API key is required to generate syllabi and quizzes.</span>
+          </div>
+          <div className="mt-4 sm:mt-0 flex flex-col items-center sm:items-end">
+            <button
+              disabled
+              className="bg-amber-100 text-amber-700 px-4 py-2 rounded-md font-medium cursor-not-allowed opacity-75"
+            >
+              Open API Settings
+            </button>
+            <span className="text-xs text-amber-600 mt-1">
+              Click API Settings in the top right corner to get started.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Upload New PDF Card */}
         <div
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
+          onDrop={apiKey ? onDrop : undefined}
+          onDragOver={apiKey ? onDragOver : undefined}
+          onDragLeave={apiKey ? onDragLeave : undefined}
           className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-colors min-h-[250px] ${
-            isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            !apiKey ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed' : isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
           }`}
         >
           {processingPhase !== 'idle' || loading ? (
@@ -124,6 +146,7 @@ export const CourseLibrary: React.FC = () => {
                 accept=".pdf"
                 className="hidden"
                 id="library-file-upload"
+                disabled={!apiKey}
                 onChange={(e) => {
                   if (e.target.files && e.target.files.length > 0) {
                     processFile(e.target.files[0]);
@@ -132,9 +155,11 @@ export const CourseLibrary: React.FC = () => {
               />
               <label
                 htmlFor="library-file-upload"
-                className="inline-block bg-blue-600 px-4 py-2 text-white rounded-md shadow-sm font-medium hover:bg-blue-700 cursor-pointer"
+                className={`inline-block px-4 py-2 text-white rounded-md shadow-sm font-medium ${
+                  !apiKey ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+                }`}
               >
-                Select File
+                {apiKey ? 'Select File' : 'Set API key first'}
               </label>
             </>
           )}

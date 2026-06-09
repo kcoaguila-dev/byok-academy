@@ -12,7 +12,6 @@ export const UploadDashboard: React.FC = () => {
   const [progress, setProgress] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{text: string; documentId: string}[]>([]);
-  
   const { setParsedText } = useStore();
   const { generateSyllabus, loading, error } = useOntology();
   const { apiKey } = useBYOK();
@@ -28,6 +27,7 @@ export const UploadDashboard: React.FC = () => {
       alert('Please upload a PDF file.');
       return;
     }
+
     if (!apiKey) {
       alert('Please set your API key first.');
       return;
@@ -39,14 +39,12 @@ export const UploadDashboard: React.FC = () => {
       const textArray = await extractTextFromPdf(file, (p) => setProgress(p));
       setParsedText(textArray);
 
-      setProgress(0);
       const fullText = textArray.join('\n\n');
       const chunks = chunkText(fullText);
-      
-      // Using the main branch signature for indexDocument
       await indexDocument(chunks, file.name);
 
-      // For generateSyllabus, we join the array into a single string
+      // For generateSyllabus, we'll join the array into a single string for now.
+      // Another step will handle useOntology if necessary, but this keeps it working.
       await generateSyllabus(fullText);
     } catch (err) {
       console.error(err);
@@ -98,7 +96,7 @@ export const UploadDashboard: React.FC = () => {
           <div className="space-y-4 w-full max-w-md mx-auto">
             <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
             <p className="text-lg text-gray-700 font-medium">
-              {isProcessing ? 'Processing Document & Embeddings...' : 'Generating syllabus...'}
+              {isProcessing ? 'Extracting text from PDF...' : 'Generating syllabus...'}
             </p>
             {isProcessing && (
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">
@@ -118,9 +116,16 @@ export const UploadDashboard: React.FC = () => {
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
             </svg>
-            <p className="text-xl text-gray-700 font-medium">Drag and drop your PDF here</p>
+            <p className="text-xl text-gray-700 font-medium">
+              Drag and drop your PDF here
+            </p>
             <p className="text-gray-500 mt-2">or click to browse</p>
             <input
               type="file"
@@ -133,7 +138,10 @@ export const UploadDashboard: React.FC = () => {
                 }
               }}
             />
-            <label htmlFor="file-upload" className="mt-4 inline-block bg-white px-4 py-2 border border-gray-300 rounded shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
+            <label
+              htmlFor="file-upload"
+              className="mt-4 inline-block bg-white px-4 py-2 border border-gray-300 rounded shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+            >
               Select File
             </label>
           </div>

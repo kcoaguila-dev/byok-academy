@@ -1,48 +1,109 @@
-import { create, insert, search } from '@orama/orama';
+import { create, insertMultiple, search, save, load, type Orama } from '@orama/orama';
+import { pipeline } from '@xenova/transformers';
+import localforage from 'localforage';
 
-// Define the Orama DB schema
-export type SearchSchema = {
-    documentId: 'string';
-    text: 'string';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let oramaDb: Orama<any> | null = null;
+let extractor: unknown = null;
+
+const getExtractor = async () => {
+  if (!extractor) {
+    extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+      quantized: false,
+    });
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return extractor as (...args: unknown[]) => Promise<any>;
+};
+const INDEX_KEY = 'orama_index';
+
+// Simple in-memory persistence adapter for localforage
+const storageAdapter = {
+  async set(key: string, value: unknown): Promise<void> {
+    await localforage.setItem(key, value);
+  },
+  async get(key: string): Promise<unknown | null> {
+    return await localforage.getItem(key);
+  },
+  async del(key: string): Promise<void> {
+    await localforage.removeItem(key);
+  }
 };
 
-let dbInstance: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const initIndex = async (): Promise<Orama<any>> => {
+  if (oramaDb) return oramaDb;
 
-export async function initializeDB() {
-    if (dbInstance) return dbInstance;
+  const getOramaConfig = () => ({
+    schema: {
+      text: 'string',
+      documentId: 'string',
+      embedding: 'vector[384]',
+    },
+  });
 
-    dbInstance = await create({
-        schema: {
-            documentId: 'string',
-            text: 'string'
-        }
-    });
-    return dbInstance;
-}
-
-export async function indexDocument(chunks: string[], documentId: string): Promise<void> {
-    const db = await initializeDB();
-
-    for (const chunk of chunks) {
-        await insert(db, {
-            documentId,
-            text: chunk
-        });
+  try {
+    const savedData = await storageAdapter.get(INDEX_KEY);
+    if (savedData) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      oramaDb = await create(getOramaConfig() as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await load(oramaDb, savedData as any);
+      return oramaDb;
     }
-}
+  } catch (error) {
+    console.error('Failed to restore Orama index from localforage', error);
+  }
 
-export async function searchIndex(query: string, limit: number = 3): Promise<{text: string; documentId: string}[]> {
-    const db = await initializeDB();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  oramaDb = await create(getOramaConfig() as any);
 
-    if (!query.trim()) return [];
+  return oramaDb;
+};
 
-    const results = await search(db, {
-        term: query,
-        limit
+export const indexDocument = async (chunks: string[], documentId: string): Promise<void> => {
+  const db = await initIndex();
+  const extract = await getExtractor();
+
+  const documents = [];
+  for (const chunk of chunks) {
+    const output = await extract(chunk, { pooling: 'mean', normalize: true });
+    const embedding = Array.from(output.data);
+    documents.push({
+      text: chunk,
+      documentId,
+      embedding,
     });
+  }
 
-    return results.hits.map((hit: any) => ({
-        text: hit.document.text,
-        documentId: hit.document.documentId
-    }));
-}
+  // For simplicity, we just insert. In a real app we might want to clear old docs first
+  // if re-indexing the same documentId.
+  await insertMultiple(db, documents);
+
+  try {
+    const serializedData = await save(db);
+    await storageAdapter.set(INDEX_KEY, serializedData);
+  } catch (error) {
+    console.error('Failed to persist Orama index to localforage', error);
+  }
+};
+
+export const searchIndex = async (query: string, limit: number = 3) => {
+  const db = await initIndex();
+  const extract = await getExtractor();
+
+  const output = await extract(query, { pooling: 'mean', normalize: true });
+  const queryEmbedding = Array.from(output.data);
+
+  const results = await search(db, {
+    term: query,
+    mode: 'hybrid',
+    vector: {
+      value: queryEmbedding as number[],
+      property: 'embedding',
+    },
+    limit,
+  });
+
+  return results.hits.map(hit => hit.document);
+};

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useBYOK } from '../hooks/useBYOK';
 import { useStore } from '../store/useStore';
+import { useConfirm } from '../components/ConfirmDialog';
 
 export const BYOKSettings: React.FC = () => {
   const { apiKey, saveApiKey, removeApiKey } = useBYOK();
+  const { confirm } = useConfirm();
   const { resetStore, modelName, setModelName, useLocalServer, setUseLocalServer, localServerUrl, setLocalServerUrl } = useStore();
   const [inputKey, setInputKey] = useState(apiKey);
   const [inputModel, setInputModel] = useState(modelName);
@@ -40,8 +42,8 @@ export const BYOKSettings: React.FC = () => {
     setInputKey('');
   };
 
-  const handleResetPlatform = () => {
-    if (window.confirm("Are you sure you want to reset the platform? This will delete your current syllabus and all progress.")) {
+  const handleResetPlatform = async () => {
+    if (await confirm("Are you sure you want to reset the platform? This will delete all courses and progress.")) {
       resetStore();
       setIsOpen(false);
     }

@@ -5,11 +5,13 @@ import { chunkText } from '../lib/chunker';
 import { indexDocument } from '../lib/search';
 import { useOntology } from '../hooks/useOntology';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 
 export const CourseLibrary: React.FC = () => {
   const { apiKey, courses, selectCourse, deleteCourse, setParsedText } = useStore();
   const { showToast } = useToast();
   const { generateSyllabus, loading, error } = useOntology();
+  const { confirm } = useConfirm();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -136,8 +138,8 @@ export const CourseLibrary: React.FC = () => {
                   Continue
                 </button>
                 <button
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this course?')) {
+                  onClick={async () => {
+                    if (await confirm('Are you sure you want to delete this course?')) {
                       deleteCourse(course.id);
                     }
                   }}

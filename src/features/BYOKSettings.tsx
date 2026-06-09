@@ -2,16 +2,20 @@ import React, { useState } from 'react';
 import { useBYOK } from '../hooks/useBYOK';
 import { useStore } from '../store/useStore';
 import { useConfirm } from '../components/ConfirmDialog';
+import { useToast } from '../components/Toast';
+import { validateApiKey } from '../lib/llmRouter';
 
 export const BYOKSettings: React.FC = () => {
   const { apiKey, saveApiKey, removeApiKey } = useBYOK();
   const { confirm } = useConfirm();
+  const { showToast } = useToast();
   const { resetStore, modelName, setModelName, useLocalServer, setUseLocalServer, localServerUrl, setLocalServerUrl } = useStore();
   const [inputKey, setInputKey] = useState(apiKey);
   const [inputModel, setInputModel] = useState(modelName);
   const [inputUseLocal, setInputUseLocal] = useState(useLocalServer);
   const [inputLocalUrl, setInputLocalUrl] = useState(localServerUrl);
   const [isOpen, setIsOpen] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
 
   // Update local state when opening settings if modelName changed externally
   React.useEffect(() => {
@@ -29,7 +33,18 @@ export const BYOKSettings: React.FC = () => {
     }
   }, [isOpen, apiKey, modelName, useLocalServer, localServerUrl]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (inputKey) {
+      setIsValidating(true);
+      const { valid, error } = await validateApiKey(inputKey, inputModel);
+      setIsValidating(false);
+
+      if (!valid) {
+        showToast(error ?? 'Invalid API key', 'error');
+        return; // Do NOT close the modal or save the key
+      }
+    }
+
     saveApiKey(inputKey);
     setModelName(inputModel);
     setUseLocalServer(inputUseLocal);
@@ -129,22 +144,25 @@ export const BYOKSettings: React.FC = () => {
             {apiKey && (
               <button
                 onClick={handleRemove}
-                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded transition"
+                disabled={isValidating}
+                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-50"
               >
                 Clear Key
               </button>
             )}
             <button
             onClick={() => setIsOpen(false)}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition"
+            disabled={isValidating}
+            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            disabled={isValidating}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
             >
-              Save
+              {isValidating ? 'Validating...' : 'Save'}
             </button>
           </div>
         </div>

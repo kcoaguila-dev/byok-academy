@@ -24,6 +24,8 @@ interface AppState {
   setActiveConcept: (concept: Concept | null) => void;
   completeActiveConcept: () => void;
   resetStore: () => void;
+  exportCoursesData: () => string;
+  importCoursesData: (json: string) => { success: boolean; error?: string };
 }
 
 export const useStore = create<AppState>((set, get) => {
@@ -151,6 +153,41 @@ export const useStore = create<AppState>((set, get) => {
         activeCourse: null,
         activeConcept: null
       });
+    },
+    exportCoursesData: () => {
+      return JSON.stringify({ version: 1, courses: get().courses }, null, 2);
+    },
+    importCoursesData: (json: string) => {
+      try {
+        const parsed = JSON.parse(json);
+        if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.courses)) {
+          return { success: false, error: 'Invalid backup file format.' };
+        }
+
+        const validCourses: Course[] = [];
+        for (const course of parsed.courses) {
+          if (course && typeof course === 'object' && 'id' in course && 'title' in course && Array.isArray(course.concepts)) {
+            validCourses.push(course);
+          } else {
+            return { success: false, error: 'Backup file contains invalid course data.' };
+          }
+        }
+
+        localforage.setItem('courses', validCourses);
+
+        const state = get();
+        const activeCourseId = state.activeCourse?.id;
+        const isActiveCourseImported = validCourses.some(c => c.id === activeCourseId);
+
+        if (activeCourseId && !isActiveCourseImported) {
+          state.setActiveCourse(null);
+        }
+
+        set({ courses: validCourses });
+        return { success: true };
+      } catch {
+        return { success: false, error: 'Failed to parse backup file.' };
+      }
     }
   };
 });

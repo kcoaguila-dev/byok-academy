@@ -41,6 +41,10 @@ export const useStore = create<AppState>((set, get) => {
     if (loadedCourses) set({ courses: loadedCourses });
   });
 
+  localforage.getItem<string>('apiKey').then((key) => {
+    if (key) set({ apiKey: key });
+  });
+
   localforage.getItem<string>('modelName').then((model) => {
     if (model) set({ modelName: model });
   });

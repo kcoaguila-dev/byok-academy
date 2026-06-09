@@ -22,6 +22,7 @@ const sanitizePromptInput = (input: string): string => {
 export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
+  const [sourceChunks, setSourceChunks] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
@@ -39,6 +40,7 @@ export const ActiveLearning: React.FC = () => {
     setLoadingQuestions(true);
     setQuestionsError(false);
     setQuestions([]);
+    setSourceChunks([]);
     setAnswers(['', '', '']);
     setFeedback([null, null, null]);
     try {
@@ -47,6 +49,7 @@ export const ActiveLearning: React.FC = () => {
         try {
           const results = await searchIndex(activeConcept.title, 3, activeCourse.id);
           if (results && results.length > 0) {
+            setSourceChunks(results.map((r: any) => r.text));
             broaderContext = results.map((r: any) => r.text).join('\n\n');
             broaderContext = sanitizePromptInput(broaderContext);
           }
@@ -82,6 +85,7 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
       generateQuestions(activeConcept.content);
     } else if (!activeConcept?.content || !apiKey) {
       setQuestions([]);
+      setSourceChunks([]);
       setAnswers(['', '', '']);
       setFeedback([null, null, null]);
     }
@@ -262,6 +266,20 @@ ${sanitizedAnswer}
                   </div>
                 ) : questions.length > 0 ? (
                   <div className="space-y-8">
+                    {sourceChunks.length > 0 && (
+                      <details className="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
+                          View source context ({sourceChunks.length} excerpts)
+                        </summary>
+                        <div className="mt-4 space-y-3">
+                          {sourceChunks.map((chunk, idx) => (
+                            <div key={idx} className="p-3 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-600">
+                              {chunk.length > 200 ? chunk.substring(0, 200) + '...' : chunk}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
                     {questions.map((q, i) => {
                       const fb = feedback[i];
                       const border = fb ? (fb.isCorrect ? 'border-green-500' : 'border-red-500') : 'border-gray-300';

@@ -6,6 +6,7 @@ import { indexDocument, setActiveDocumentId, deleteDocumentIndex } from '../lib/
 import { useOntology } from '../hooks/useOntology';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
+import { DataBackup } from '../components/DataBackup';
 
 export const CourseLibrary: React.FC = () => {
   const { apiKey, courses, selectCourse, deleteCourse, setParsedText } = useStore();
@@ -197,6 +198,8 @@ export const CourseLibrary: React.FC = () => {
           <p className="font-mono text-sm mt-1">{error}</p>
         </div>
       )}
+
+      <DataBackup />
 
       {courses.length === 0 && processingPhase === 'idle' && !loading && (
         <div className="mt-8 text-center text-gray-500">

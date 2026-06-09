@@ -1,6 +1,12 @@
-import { create, insertMultiple, search, save, load, type Orama } from '@orama/orama';
+import { create, insertMultiple, removeMultiple, search, save, load, type Orama } from '@orama/orama';
 import { pipeline } from '@xenova/transformers';
 import localforage from 'localforage';
+
+export let activeDocumentId: string | null = null;
+
+export const setActiveDocumentId = (id: string | null): void => {
+  activeDocumentId = id;
+};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let oramaDb: Orama<any> | null = null;
@@ -61,8 +67,29 @@ export const initIndex = async (): Promise<Orama<any>> => {
   return oramaDb;
 };
 
+export const deleteDocumentIndex = async (documentId: string): Promise<void> => {
+  const db = await initIndex();
+  const results = await search(db, {
+    term: '', // empty term matches all when filtering
+    where: { documentId },
+    limit: 100000
+  });
+
+  const ids = results.hits.map(h => h.id);
+  if (ids.length > 0) {
+    await removeMultiple(db, ids);
+    try {
+      const serializedData = await save(db);
+      await storageAdapter.set(INDEX_KEY, serializedData);
+    } catch (error) {
+      console.error('Failed to persist Orama index after deletion', error);
+    }
+  }
+};
+
 export const indexDocument = async (chunks: string[], documentId: string): Promise<void> => {
   const db = await initIndex();
+  await deleteDocumentIndex(documentId);
   const extract = await getExtractor();
 
   const documents = await Promise.all(
@@ -89,14 +116,15 @@ export const indexDocument = async (chunks: string[], documentId: string): Promi
   }
 };
 
-export const searchIndex = async (query: string, limit: number = 3) => {
+export const searchIndex = async (query: string, limit: number = 3, documentId?: string) => {
   const db = await initIndex();
   const extract = await getExtractor();
 
   const output = await extract(query, { pooling: 'mean', normalize: true });
   const queryEmbedding = Array.from(output.data);
 
-  const results = await search(db, {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const searchParams: any = {
     term: query,
     mode: 'hybrid',
     vector: {
@@ -104,7 +132,13 @@ export const searchIndex = async (query: string, limit: number = 3) => {
       property: 'embedding',
     },
     limit,
-  });
+  };
+
+  if (documentId) {
+    searchParams.where = { documentId };
+  }
+
+  const results = await search(db, searchParams);
 
   return results.hits.map(hit => hit.document);
 };

@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { extractTextFromPdf } from '../lib/pdfParser';
 import { chunkText } from '../lib/chunker';
-import { indexDocument } from '../lib/search';
+import { indexDocument, setActiveDocumentId, deleteDocumentIndex } from '../lib/search';
 import { useOntology } from '../hooks/useOntology';
 import { useToast } from '../components/Toast';
 
@@ -34,16 +34,18 @@ export const CourseLibrary: React.FC = () => {
       const fullText = textArray.join('\n\n');
       const chunks = chunkText(fullText);
 
-      await Promise.all([
-        indexDocument(chunks, file.name).then(() => setIsProcessing(false)),
-        generateSyllabus(fullText)
-      ]);
+      await generateSyllabus(fullText);
+      const newCourseId = useStore.getState().activeCourse?.id;
+      if (newCourseId) {
+        await indexDocument(chunks, newCourseId);
+        setActiveDocumentId(newCourseId);
+      }
     } catch (err) {
       showToast('Error processing file', 'error');
     } finally {
       setIsProcessing(false);
     }
-  }, [apiKey, generateSyllabus, setParsedText]);
+  }, [apiKey, generateSyllabus, setParsedText, showToast]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
@@ -136,8 +138,9 @@ export const CourseLibrary: React.FC = () => {
                   Continue
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (window.confirm('Are you sure you want to delete this course?')) {
+                      await deleteDocumentIndex(course.id);
                       deleteCourse(course.id);
                     }
                   }}

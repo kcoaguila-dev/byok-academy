@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { callLLM } from '../lib/llmRouter';
+import { searchIndex } from '../lib/search';
 
+import { ConceptGraph } from './ConceptGraph';
 import localforage from 'localforage';
 import { useToast } from '../components/Toast';
 
@@ -23,6 +25,7 @@ export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, activeConcept, setActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
   const [feedback, setFeedback] = useState<(QuizFeedback | null)[]>([null, null, null]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -37,6 +40,20 @@ export const ActiveLearning: React.FC = () => {
     setAnswers(['', '', '']);
     setFeedback([null, null, null]);
     try {
+      let broaderContext = '';
+      if (activeConcept?.title) {
+        try {
+          const results = await searchIndex(activeConcept.title, 3);
+          if (results && results.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            broaderContext = results.map((r: any) => r.text).join('\n\n');
+            broaderContext = sanitizePromptInput(broaderContext);
+          }
+        } catch (e) {
+          console.error('Failed to search index in generateQuestions', e);
+        }
+      }
+
       const sanitizedContext = sanitizePromptInput(context);
       const prompt = `Based on the following context, generate exactly 3 short, open-ended questions to test the student's understanding.
 Format the output as a JSON array of strings. Do not include markdown blocks.
@@ -44,7 +61,8 @@ Example: ["Question 1?", "Question 2?", "Question 3?"]
 
 <context>
 ${sanitizedContext}
-</context>`;
+</context>
+${broaderContext ? `<broader_context>\n${broaderContext}\n</broader_context>` : ''}`;
       const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsedQuestions = JSON.parse(cleanJson);
@@ -98,6 +116,20 @@ ${sanitizedContext}
     setGradingIndices(newGrading);
 
     try {
+      let broaderContext = '';
+      if (activeConcept?.title) {
+        try {
+          const results = await searchIndex(activeConcept.title, 3);
+          if (results && results.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            broaderContext = results.map((r: any) => r.text).join('\n\n');
+            broaderContext = sanitizePromptInput(broaderContext);
+          }
+        } catch (e) {
+          console.error('Failed to search index in handleSubmitAnswer', e);
+        }
+      }
+
       const sanitizedContext = sanitizePromptInput(activeConcept.content);
       const sanitizedQuestion = sanitizePromptInput(questions[index]);
       const sanitizedAnswer = sanitizePromptInput(answers[index]);
@@ -109,6 +141,7 @@ Output ONLY a JSON object matching this schema, without markdown formatting:
 <context>
 ${sanitizedContext}
 </context>
+${broaderContext ? `<broader_context>\n${broaderContext}\n</broader_context>` : ''}
 
 <question>
 ${sanitizedQuestion}
@@ -166,10 +199,40 @@ ${sanitizedAnswer}
       {/* Sidebar: Course Navigation */}
       {isSidebarOpen && (
         <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
-          <div className="p-4 border-b border-gray-200 bg-white">
-            <h2 className="font-bold text-gray-800 truncate">{activeCourse.title}</h2>
+          <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
+            <h2 className="font-bold text-gray-800 truncate" title={activeCourse.title}>{activeCourse.title}</h2>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {viewMode === 'graph' ? (
+              <ConceptGraph
+                course={activeCourse}
+                activeConcept={activeConcept}
+                onSelectConcept={setActiveConcept}
+              />
+            ) : (
+              activeCourse.concepts.map((c) => {
+                const isActive = activeConcept?.id === c.id;
+                const isCompleted = c.status === 'completed';
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setActiveConcept(c)}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${
+                      isActive
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <span className="truncate pr-2" title={c.title}>{c.title}</span>
+                    {isCompleted ? (
+                      <span className="text-green-500 font-bold">✓</span>
+                    ) : (
+                      <span className="text-gray-300">○</span>
+                    )}
+                  </button>
+                );
+              })
+            )}
             {activeCourse.concepts.map((c) => {
               const isActive = activeConcept?.id === c.id;
               const isCompleted = c.status === 'completed';
@@ -218,6 +281,7 @@ ${sanitizedAnswer}
               </svg>
             </button>
           </div>
+        <div className="bg-white border-b border-gray-200 p-2 flex items-center gap-4">
           <button
             onClick={() => setActiveCourse(null)}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex items-center"
@@ -226,6 +290,13 @@ ${sanitizedAnswer}
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back to Library
+          </button>
+
+          <button
+            onClick={() => setViewMode(prev => prev === 'list' ? 'graph' : 'list')}
+            className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+          >
+            {viewMode === 'list' ? 'Graph View' : 'List View'}
           </button>
         </div>
 

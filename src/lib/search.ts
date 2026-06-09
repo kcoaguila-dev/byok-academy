@@ -15,6 +15,16 @@ const getExtractor = async () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return extractor as (...args: unknown[]) => Promise<any>;
 };
+
+export const warmupEmbeddingModel = async (): Promise<void> => {
+  try {
+    await getExtractor();
+  } catch (e) {
+    // Resolve silently on failure
+    console.error('Failed to warmup embedding model', e);
+  }
+};
+
 const INDEX_KEY = 'orama_index';
 
 // Simple in-memory persistence adapter for localforage

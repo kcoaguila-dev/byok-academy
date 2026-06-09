@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { callLLM } from '../lib/llmRouter';
+import localforage from 'localforage';
 
 interface QuizFeedback {
   isCorrect: boolean;
@@ -16,7 +17,7 @@ const sanitizePromptInput = (input: string): string => {
 };
 
 export const ActiveLearning: React.FC = () => {
-  const { apiKey, modelName, activeCourse, activeConcept, setActiveConcept, completeActiveConcept } = useStore();
+  const { apiKey, modelName, activeCourse, activeConcept, setActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
@@ -117,24 +118,27 @@ ${sanitizedAnswer}
       setFeedback(newFeedback);
 
       // Mastery Tracking: if all 3 questions are answered correctly
-      if (newFeedback.filter(fb => fb?.isCorrect).length === 3) {
-        completeActiveConcept();
+      if (newFeedback.filter(fb => fb?.isCorrect).length === 3 && activeCourse) {
+        const updatedConcepts = activeCourse.concepts.map(c =>
+          c.id === activeConcept.id ? { ...c, status: 'completed' as const } : c
+        );
 
-        // Automatically navigate to the next unlocked concept
-        const { activeCourse: latestCourse, setActiveConcept } = useStore.getState();
-        if (latestCourse) {
-          const nextConcept = latestCourse.concepts.find(c => {
-            if (c.status === 'completed') return false;
-            if (!c.prerequisites || c.prerequisites.length === 0) return true;
-            return c.prerequisites.every(prereqId => {
-              const prereq = latestCourse.concepts.find(p => p.id === prereqId);
-              return prereq?.status === 'completed';
-            });
+        const updatedCourse = { ...activeCourse, concepts: updatedConcepts };
+
+        useStore.getState().setActiveCourse(updatedCourse);
+        localforage.setItem('activeCourse', updatedCourse);
+
+        const nextConcept = updatedConcepts.find(c => {
+          if (c.status === 'completed') return false;
+          if (!c.prerequisites || c.prerequisites.length === 0) return true;
+          return c.prerequisites.every(prereqId => {
+            const prereq = updatedConcepts.find(p => p.id === prereqId);
+            return prereq?.status === 'completed';
           });
+        });
 
-          if (nextConcept) {
-            setActiveConcept(nextConcept);
-          }
+        if (nextConcept) {
+          useStore.getState().setActiveConcept(nextConcept);
         }
       }
     } catch (e) {

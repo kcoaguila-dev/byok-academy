@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { callLLM } from '../lib/llmRouter';
+import { useToast } from '../components/Toast';
 
 interface QuizFeedback {
   isCorrect: boolean;
@@ -23,9 +24,12 @@ export const ActiveLearning: React.FC = () => {
   const [feedback, setFeedback] = useState<(QuizFeedback | null)[]>([null, null, null]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [gradingIndices, setGradingIndices] = useState<boolean[]>([false, false, false]);
+  const [questionsError, setQuestionsError] = useState(false);
+  const { showToast } = useToast();
 
   const generateQuestions = async (context: string) => {
     setLoadingQuestions(true);
+    setQuestionsError(false);
     setQuestions([]);
     setAnswers(['', '', '']);
     setFeedback([null, null, null]);
@@ -43,9 +47,12 @@ ${sanitizedContext}
       const parsedQuestions = JSON.parse(cleanJson);
       if (Array.isArray(parsedQuestions) && parsedQuestions.length === 3) {
         setQuestions(parsedQuestions);
+      } else {
+        throw new Error('Invalid questions format');
       }
     } catch (e) {
-      console.error('Failed to generate questions', e);
+      setQuestionsError(true);
+      showToast('Could not generate questions for this concept.', 'error');
     } finally {
       setLoadingQuestions(false);
     }
@@ -121,7 +128,7 @@ ${sanitizedAnswer}
         completeActiveConcept();
       }
     } catch (e) {
-      console.error('Failed to grade answer', e);
+      showToast('Grading failed. Please try again.', 'error');
     } finally {
       const newGradingFinished = [...gradingIndices];
       newGradingFinished[index] = false;
@@ -212,6 +219,16 @@ ${sanitizedAnswer}
 
           {loadingQuestions ? (
             <div className="text-gray-500 animate-pulse">Generating interactive questions...</div>
+          ) : questionsError ? (
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <p className="text-red-500">Failed to load questions.</p>
+              <button
+                onClick={() => activeConcept?.content && generateQuestions(activeConcept.content)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              >
+                Retry
+              </button>
+            </div>
           ) : questions.length > 0 ? (
             <div className="space-y-8">
               {questions.map((q, i) => {

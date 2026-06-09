@@ -78,6 +78,7 @@ export const initIndex = async (): Promise<Orama<any>> => {
 };
 
 export const deleteDocumentIndex = async (documentId: string): Promise<void> => {
+  oramaDb = null;
   const db = await initIndex();
   const results = await search(db, {
     term: '', // empty term matches all when filtering

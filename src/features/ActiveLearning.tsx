@@ -5,19 +5,12 @@ import { searchIndex, setActiveDocumentId } from '../lib/search';
 import { ConceptGraph } from './ConceptGraph';
 import localforage from 'localforage';
 import { useToast } from '../components/Toast';
+import { sanitizePromptInput } from '../lib/sanitize';
 
 interface QuizFeedback {
   isCorrect: boolean;
   hint: string;
 }
-
-const sanitizePromptInput = (input: string): string => {
-  if (!input) return '';
-  return input
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/`/g, '\\`');
-};
 
 export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept } = useStore();

@@ -13,8 +13,9 @@ export const CourseLibrary: React.FC = () => {
   const { generateSyllabus, loading, error } = useOntology();
   const { confirm } = useConfirm();
 
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingPhase, setProcessingPhase] = useState<'idle' | 'extracting' | 'generating' | 'indexing'>('idle');
   const [progress, setProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const processFile = useCallback(async (file: File) => {
     if (file.type !== 'application/pdf') {
@@ -27,7 +28,7 @@ export const CourseLibrary: React.FC = () => {
       return;
     }
 
-    setIsProcessing(true);
+    setProcessingPhase('extracting');
     setProgress(0);
     try {
       const textArray = await extractTextFromPdf(file, (p) => setProgress(p));
@@ -36,18 +37,43 @@ export const CourseLibrary: React.FC = () => {
       const fullText = textArray.join('\n\n');
       const chunks = chunkText(fullText);
 
+      setProcessingPhase('generating');
       await generateSyllabus(fullText);
+
       const newCourseId = useStore.getState().activeCourse?.id;
       if (newCourseId) {
-        await indexDocument(chunks, newCourseId);
+        setProcessingPhase('indexing');
+        setProgress(0);
+        await indexDocument(chunks, newCourseId, (p) => setProgress(p));
         setActiveDocumentId(newCourseId);
       }
     } catch (err) {
       showToast('Error processing file', 'error');
     } finally {
-      setIsProcessing(false);
+      setProcessingPhase('idle');
     }
   }, [apiKey, generateSyllabus, setParsedText, showToast]);
+
+  const onDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragging(false);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        processFile(e.dataTransfer.files[0]);
+      }
+    },
+    [processFile]
+  );
+
+  const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
@@ -60,14 +86,23 @@ export const CourseLibrary: React.FC = () => {
 
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Upload New PDF Card */}
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-gray-400 hover:bg-gray-50 transition-colors min-h-[250px]">
-          {isProcessing || loading ? (
+        <div
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-colors min-h-[250px] ${
+            isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+          }`}
+        >
+          {processingPhase !== 'idle' || loading ? (
             <div className="space-y-4 w-full">
               <div className="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
               <p className="text-sm text-gray-700 font-medium">
-                {isProcessing ? 'Extracting text...' : 'Generating syllabus...'}
+                {processingPhase === 'extracting' ? 'Extracting text...' :
+                 processingPhase === 'generating' || loading ? 'Generating syllabus...' :
+                 processingPhase === 'indexing' ? 'Indexing document for search...' : 'Processing...'}
               </p>
-              {isProcessing && (
+              {(processingPhase === 'extracting' || processingPhase === 'indexing') && (
                 <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
@@ -163,7 +198,7 @@ export const CourseLibrary: React.FC = () => {
         </div>
       )}
 
-      {courses.length === 0 && !isProcessing && !loading && (
+      {courses.length === 0 && processingPhase === 'idle' && !loading && (
         <div className="mt-8 text-center text-gray-500">
           No courses saved yet. Upload a PDF to get started!
         </div>

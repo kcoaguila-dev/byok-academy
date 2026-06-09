@@ -376,7 +376,6 @@ ${sanitizedAnswer}
           )}
         </div>
       </div>
-          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400">
             Please select a concept from the sidebar to begin learning.

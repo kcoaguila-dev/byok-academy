@@ -11,16 +11,3 @@ export interface Concept {
   prerequisites?: string[];
   status: 'pending' | 'in-progress' | 'completed';
 }
-
-export interface Quiz {
-  id: string;
-  conceptId: string;
-  questions: Question[];
-}
-
-export interface Question {
-  id: string;
-  text: string;
-  options: string[];
-  correctAnswerIndex: number;
-}

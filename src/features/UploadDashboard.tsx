@@ -5,6 +5,7 @@ import { useOntology } from '../hooks/useOntology';
 import { useBYOK } from '../hooks/useBYOK';
 import { chunkText } from '../lib/chunker';
 import { indexDocument, searchIndex } from '../lib/search';
+import { useToast } from '../components/Toast';
 
 export const UploadDashboard: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
@@ -15,6 +16,7 @@ export const UploadDashboard: React.FC = () => {
   const { setParsedText } = useStore();
   const { generateSyllabus, loading, error } = useOntology();
   const { apiKey } = useBYOK();
+  const { showToast } = useToast();
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -24,12 +26,12 @@ export const UploadDashboard: React.FC = () => {
 
   const processFile = useCallback(async (file: File) => {
     if (file.type !== 'application/pdf') {
-      alert('Please upload a PDF file.');
+      showToast('Please upload a PDF file.', 'error');
       return;
     }
 
     if (!apiKey) {
-      alert('Please set your API key first.');
+      showToast('Please set your API key first.', 'error');
       return;
     }
 
@@ -49,12 +51,11 @@ export const UploadDashboard: React.FC = () => {
         generateSyllabus(fullText)
       ]);
     } catch (err) {
-      console.error(err);
-      alert('Error processing file');
+      showToast('Error processing file', 'error');
     } finally {
       setIsProcessing(false);
     }
-  }, [apiKey, generateSyllabus, setParsedText]);
+  }, [apiKey, generateSyllabus, setParsedText, showToast]);
 
   const onDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {

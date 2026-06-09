@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { callLLM } from '../lib/llmRouter';
+import { searchIndex } from '../lib/search';
 
 import { ConceptGraph } from './ConceptGraph';
 import localforage from 'localforage';
@@ -38,6 +39,20 @@ export const ActiveLearning: React.FC = () => {
     setAnswers(['', '', '']);
     setFeedback([null, null, null]);
     try {
+      let broaderContext = '';
+      if (activeConcept?.title) {
+        try {
+          const results = await searchIndex(activeConcept.title, 3);
+          if (results && results.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            broaderContext = results.map((r: any) => r.text).join('\n\n');
+            broaderContext = sanitizePromptInput(broaderContext);
+          }
+        } catch (e) {
+          console.error('Failed to search index in generateQuestions', e);
+        }
+      }
+
       const sanitizedContext = sanitizePromptInput(context);
       const prompt = `Based on the following context, generate exactly 3 short, open-ended questions to test the student's understanding.
 Format the output as a JSON array of strings. Do not include markdown blocks.
@@ -45,7 +60,8 @@ Example: ["Question 1?", "Question 2?", "Question 3?"]
 
 <context>
 ${sanitizedContext}
-</context>`;
+</context>
+${broaderContext ? `<broader_context>\n${broaderContext}\n</broader_context>` : ''}`;
       const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsedQuestions = JSON.parse(cleanJson);
@@ -99,6 +115,20 @@ ${sanitizedContext}
     setGradingIndices(newGrading);
 
     try {
+      let broaderContext = '';
+      if (activeConcept?.title) {
+        try {
+          const results = await searchIndex(activeConcept.title, 3);
+          if (results && results.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            broaderContext = results.map((r: any) => r.text).join('\n\n');
+            broaderContext = sanitizePromptInput(broaderContext);
+          }
+        } catch (e) {
+          console.error('Failed to search index in handleSubmitAnswer', e);
+        }
+      }
+
       const sanitizedContext = sanitizePromptInput(activeConcept.content);
       const sanitizedQuestion = sanitizePromptInput(questions[index]);
       const sanitizedAnswer = sanitizePromptInput(answers[index]);
@@ -110,6 +140,7 @@ Output ONLY a JSON object matching this schema, without markdown formatting:
 <context>
 ${sanitizedContext}
 </context>
+${broaderContext ? `<broader_context>\n${broaderContext}\n</broader_context>` : ''}
 
 <question>
 ${sanitizedQuestion}

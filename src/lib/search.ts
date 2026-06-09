@@ -65,16 +65,17 @@ export const indexDocument = async (chunks: string[], documentId: string): Promi
   const db = await initIndex();
   const extract = await getExtractor();
 
-  const documents = [];
-  for (const chunk of chunks) {
-    const output = await extract(chunk, { pooling: 'mean', normalize: true });
-    const embedding = Array.from(output.data);
-    documents.push({
-      text: chunk,
-      documentId,
-      embedding,
-    });
-  }
+  const documents = await Promise.all(
+    chunks.map(async (chunk) => {
+      const output = await extract(chunk, { pooling: 'mean', normalize: true });
+      const embedding = Array.from(output.data);
+      return {
+        text: chunk,
+        documentId,
+        embedding,
+      };
+    })
+  );
 
   // For simplicity, we just insert. In a real app we might want to clear old docs first
   // if re-indexing the same documentId.

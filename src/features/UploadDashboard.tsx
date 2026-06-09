@@ -41,11 +41,13 @@ export const UploadDashboard: React.FC = () => {
 
       const fullText = textArray.join('\n\n');
       const chunks = chunkText(fullText);
-      await indexDocument(chunks, file.name);
 
       // For generateSyllabus, we'll join the array into a single string for now.
       // Another step will handle useOntology if necessary, but this keeps it working.
-      await generateSyllabus(fullText);
+      await Promise.all([
+        indexDocument(chunks, file.name).then(() => setIsProcessing(false)),
+        generateSyllabus(fullText)
+      ]);
     } catch (err) {
       console.error(err);
       alert('Error processing file');

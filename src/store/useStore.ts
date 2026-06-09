@@ -3,6 +3,10 @@ import type { Course, Concept } from '../types';
 import localforage from 'localforage';
 
 interface AppState {
+  courses: Course[];
+  addCourse: (course: Course) => void;
+  deleteCourse: (courseId: string) => void;
+  selectCourse: (courseId: string) => void;
   apiKey: string;
   setApiKey: (key: string) => void;
   modelName: string;
@@ -30,6 +34,10 @@ export const useStore = create<AppState>((set, get) => {
     if (course) set({ activeCourse: course });
   });
 
+  localforage.getItem<Course[]>('courses').then((loadedCourses) => {
+    if (loadedCourses) set({ courses: loadedCourses });
+  });
+
   localforage.getItem<string>('modelName').then((model) => {
     if (model) set({ modelName: model });
   });
@@ -43,6 +51,27 @@ export const useStore = create<AppState>((set, get) => {
   });
 
   return {
+    courses: [],
+    addCourse: (course) => {
+      const { courses } = get();
+      const updatedCourses = [...courses, course];
+      localforage.setItem('courses', updatedCourses);
+      set({ courses: updatedCourses });
+    },
+    deleteCourse: (courseId) => {
+      const { courses } = get();
+      const updatedCourses = courses.filter(c => c.id !== courseId);
+      localforage.setItem('courses', updatedCourses);
+      set({ courses: updatedCourses });
+    },
+    selectCourse: (courseId) => {
+      const { courses } = get();
+      const course = courses.find(c => c.id === courseId);
+      if (course) {
+        set({ activeCourse: course });
+        localforage.setItem('activeCourse', course);
+      }
+    },
     apiKey: '',
     setApiKey: (key) => set({ apiKey: key }),
     modelName: 'gpt-4o-mini',

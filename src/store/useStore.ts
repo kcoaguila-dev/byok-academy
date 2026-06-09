@@ -5,6 +5,7 @@ import localforage from 'localforage';
 interface AppState {
   courses: Course[];
   addCourse: (course: Course) => void;
+  updateCourse: (course: Course) => void;
   deleteCourse: (courseId: string) => void;
   selectCourse: (courseId: string) => void;
   apiKey: string;
@@ -58,6 +59,12 @@ export const useStore = create<AppState>((set, get) => {
       localforage.setItem('courses', updatedCourses);
       set({ courses: updatedCourses });
     },
+    updateCourse: (course) => {
+      const { courses } = get();
+      const updatedCourses = courses.map(c => c.id === course.id ? course : c);
+      localforage.setItem('courses', updatedCourses);
+      set({ courses: updatedCourses });
+    },
     deleteCourse: (courseId) => {
       const { courses } = get();
       const updatedCourses = courses.filter(c => c.id !== courseId);
@@ -68,7 +75,19 @@ export const useStore = create<AppState>((set, get) => {
       const { courses } = get();
       const course = courses.find(c => c.id === courseId);
       if (course) {
-        set({ activeCourse: course });
+        let firstUnlocked = course.concepts.find(concept => {
+          if (!concept.prerequisites || concept.prerequisites.length === 0) return true;
+          return concept.prerequisites.every(prereqId => {
+            const prereq = course.concepts.find(c => c.id === prereqId);
+            return prereq && prereq.status === 'completed';
+          });
+        });
+
+        if (!firstUnlocked && course.concepts.length > 0) {
+          firstUnlocked = course.concepts[0];
+        }
+
+        set({ activeCourse: course, activeConcept: firstUnlocked || null });
         localforage.setItem('activeCourse', course);
       }
     },
@@ -97,7 +116,12 @@ export const useStore = create<AppState>((set, get) => {
     activeCourse: null,
     setActiveCourse: (course) => {
       localforage.setItem('activeCourse', course);
-      set({ activeCourse: course });
+      if (course) {
+        get().updateCourse(course);
+        set({ activeCourse: course });
+      } else {
+        set({ activeCourse: null, activeConcept: null });
+      }
     },
     activeConcept: null,
     setActiveConcept: (concept) => set({ activeConcept: concept }),
@@ -113,6 +137,7 @@ export const useStore = create<AppState>((set, get) => {
       const updatedConcept = { ...activeConcept, status: 'completed' as const };
 
       localforage.setItem('activeCourse', updatedCourse);
+      get().updateCourse(updatedCourse);
       set({
         activeCourse: updatedCourse,
         activeConcept: updatedConcept
@@ -121,6 +146,7 @@ export const useStore = create<AppState>((set, get) => {
     resetStore: async () => {
       await localforage.clear();
       set({
+        courses: [],
         parsedText: [],
         activeCourse: null,
         activeConcept: null

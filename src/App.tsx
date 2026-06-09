@@ -1,6 +1,6 @@
 import { useStore } from './store/useStore';
 import { BYOKSettings } from './features/BYOKSettings';
-import { UploadDashboard } from './features/UploadDashboard';
+import { CourseLibrary } from './features/CourseLibrary';
 import { ActiveLearning } from './features/ActiveLearning';
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
       <BYOKSettings />
 
       {!activeCourse ? (
-        <UploadDashboard />
+        <CourseLibrary />
       ) : (
         <ActiveLearning />
       )}

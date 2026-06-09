@@ -16,7 +16,7 @@ const sanitizePromptInput = (input: string): string => {
 };
 
 export const ActiveLearning: React.FC = () => {
-  const { apiKey, modelName, activeCourse, activeConcept, setActiveConcept, completeActiveConcept } = useStore();
+  const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept, completeActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
@@ -168,14 +168,25 @@ ${sanitizedAnswer}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="bg-white border-b border-gray-200 p-2 flex items-center">
+        <div className="bg-white border-b border-gray-200 p-2 flex items-center justify-between">
+          <div className="flex items-center">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
           <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
+            onClick={() => setActiveCourse(null)}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex items-center"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
+            Back to Library
           </button>
         </div>
 

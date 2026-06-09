@@ -119,6 +119,23 @@ ${sanitizedAnswer}
       // Mastery Tracking: if all 3 questions are answered correctly
       if (newFeedback.filter(fb => fb?.isCorrect).length === 3) {
         completeActiveConcept();
+
+        // Automatically navigate to the next unlocked concept
+        const { activeCourse: latestCourse, setActiveConcept } = useStore.getState();
+        if (latestCourse) {
+          const nextConcept = latestCourse.concepts.find(c => {
+            if (c.status === 'completed') return false;
+            if (!c.prerequisites || c.prerequisites.length === 0) return true;
+            return c.prerequisites.every(prereqId => {
+              const prereq = latestCourse.concepts.find(p => p.id === prereqId);
+              return prereq?.status === 'completed';
+            });
+          });
+
+          if (nextConcept) {
+            setActiveConcept(nextConcept);
+          }
+        }
       }
     } catch (e) {
       console.error('Failed to grade answer', e);
@@ -143,12 +160,19 @@ ${sanitizedAnswer}
             {activeCourse.concepts.map((c) => {
               const isActive = activeConcept?.id === c.id;
               const isCompleted = c.status === 'completed';
+              const isLocked = !!c.prerequisites?.some(prereqId => {
+                const prereq = activeCourse.concepts.find(p => p.id === prereqId);
+                return prereq && prereq.status !== 'completed';
+              });
               return (
                 <button
                   key={c.id}
                   onClick={() => setActiveConcept(c)}
+                  disabled={isLocked}
                   className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${
-                    isActive
+                    isLocked
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : isActive
                       ? 'bg-blue-100 text-blue-800'
                       : 'text-gray-600 hover:bg-gray-200'
                   }`}
@@ -156,6 +180,8 @@ ${sanitizedAnswer}
                   <span className="truncate pr-2">{c.title}</span>
                   {isCompleted ? (
                     <span className="text-green-500 font-bold">✓</span>
+                  ) : isLocked ? (
+                    <span className="text-gray-400">🔒</span>
                   ) : (
                     <span className="text-gray-300">○</span>
                   )}

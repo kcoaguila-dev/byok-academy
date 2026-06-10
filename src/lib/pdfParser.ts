@@ -12,19 +12,27 @@ export const extractTextFromPdf = async (
   const loadingTask = pdfjsLib.getDocument(new Uint8Array(arrayBuffer));
   const pdf = await loadingTask.promise;
 
-  const pagesText: string[] = [];
+  const promises: Promise<string>[] = [];
+  let completedPages = 0;
 
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items.map((item) => ('str' in item ? item.str : '')).join(' ');
+    promises.push(
+      (async () => {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item) => ('str' in item ? item.str : '')).join(' ');
 
-    pagesText.push(pageText);
+        if (onProgress) {
+          completedPages++;
+          onProgress(Math.round((completedPages / pdf.numPages) * 100));
+        }
 
-    if (onProgress) {
-      onProgress(Math.round((pageNum / pdf.numPages) * 100));
-    }
+        return pageText;
+      })()
+    );
   }
+
+  const pagesText = await Promise.all(promises);
 
   return pagesText;
 };

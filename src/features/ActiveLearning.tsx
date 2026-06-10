@@ -254,16 +254,31 @@ ${sanitizedAnswer}`;
               activeCourse.concepts.map((c) => {
                 const isActive = activeConcept?.id === c.id;
                 const isCompleted = c.status === 'completed';
-                const isLocked = !isCompleted && !!c.prerequisites?.some(prereqId => {
-                  const prereq = activeCourse.concepts.find(p => p.id === prereqId);
-                  return prereq && prereq.status !== 'completed';
-                });
+
+                const uncompletedPrereqs = c.prerequisites?.map(prereqId =>
+                  activeCourse.concepts.find(p => p.id === prereqId)
+                ).filter(p => p && p.status !== 'completed') || [];
+
+                const isLocked = !isCompleted && uncompletedPrereqs.length > 0;
+
                 return (
-                  <button key={c.id} onClick={() => !isLocked && setActiveConcept(c)} disabled={isLocked}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${isLocked ? 'text-gray-400 cursor-not-allowed' : isActive ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:bg-gray-200'}`}>
-                    <span className="truncate pr-2" title={c.title}>{c.title}</span>
-                    {isCompleted ? <span className="text-green-500 font-bold">✓</span> : isLocked ? <span className="text-gray-400">🔒</span> : <span className="text-gray-300">○</span>}
-                  </button>
+                  <div key={c.id} className="relative group">
+                    <button onClick={() => !isLocked && setActiveConcept(c)} disabled={isLocked}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${isLocked ? 'text-gray-400 cursor-not-allowed' : isActive ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:bg-gray-200'}`}>
+                      <span className="truncate pr-2" title={c.title}>{c.title}</span>
+                      {isCompleted ? <span className="text-green-500 font-bold">✓</span> : isLocked ? <span className="text-gray-400">🔒</span> : <span className="text-gray-300">○</span>}
+                    </button>
+                    {isLocked && (
+                      <div className="absolute top-full left-0 mt-1 hidden group-hover:block z-50 w-full bg-gray-800 text-white text-xs rounded p-2 shadow-lg">
+                        <p className="font-semibold mb-1 border-b border-gray-600 pb-1">Prerequisites:</p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          {uncompletedPrereqs.map(p => (
+                            <li key={p!.id}>{p!.title}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 );
               })
             )}

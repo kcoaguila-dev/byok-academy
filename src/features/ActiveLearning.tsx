@@ -59,7 +59,9 @@ export const ActiveLearning: React.FC = () => {
             broaderContext = results.map((r: any) => r.text).join('\n\n');
             broaderContext = sanitizePromptInput(broaderContext);
           }
-        } catch (e) { /* silently fall back */ }
+        } catch (e) {
+          console.warn('Failed to retrieve broader context from search index:', e);
+        }
       }
       const sanitizedContext = sanitizePromptInput(context);
       const prompt = `Based on the following context, generate exactly 3 short, open-ended questions to test the student's understanding.
@@ -122,7 +124,9 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
             broaderContext = results.map((r: any) => r.text).join('\n\n');
             broaderContext = sanitizePromptInput(broaderContext);
           }
-        } catch (e) { /* silently fall back */ }
+        } catch (e) {
+          console.warn('Failed to retrieve broader context from search index:', e);
+        }
       }
       const sanitizedContext = sanitizePromptInput(activeConcept.content);
       const sanitizedQuestion = sanitizePromptInput(questions[index]);

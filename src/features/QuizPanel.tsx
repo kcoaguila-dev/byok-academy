@@ -46,7 +46,14 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({
         <h2 className="text-2xl font-bold mb-2 text-gray-800">Knowledge Check</h2>
         <p className="text-gray-600 mb-8">Test your understanding of {activeConcept.title}</p>
         {loadingQuestions ? (
-          <div className="text-gray-500 animate-pulse">Generating interactive questions...</div>
+          <div className="space-y-8">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
+                <div className="h-24 bg-gray-200 rounded-lg w-full mb-3"></div>
+              </div>
+            ))}
+          </div>
         ) : questionsError ? (
           <div className="flex flex-col items-center justify-center space-y-4">
             <p className="text-red-500">Failed to load questions.</p>

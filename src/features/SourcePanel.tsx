@@ -17,9 +17,14 @@ export const SourcePanel: React.FC<SourcePanelProps> = ({ activeConcept, sourceP
               {passage}
             </blockquote>
           ))
+        ) : !activeConcept.content ? (
+          <div className="animate-pulse space-y-4">
+            <div className="h-24 bg-gray-200 rounded w-full"></div>
+            <div className="h-24 bg-gray-200 rounded w-full"></div>
+          </div>
         ) : (
           <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-            {activeConcept.content || <span className="text-gray-500 italic">No content available.</span>}
+            {activeConcept.content}
           </div>
         )}
       </article>

@@ -10,7 +10,7 @@ vi.mock('../store/useStore', () => ({
 }));
 
 // Mock global fetch
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 describe('callLLM', () => {
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe('callLLM', () => {
     const mockResponse = {
       choices: [{ message: { content: 'Default response' } }],
     };
-    vi.mocked(global.fetch).mockResolvedValueOnce({
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     } as Response);
@@ -38,7 +38,7 @@ describe('callLLM', () => {
     const result = await callLLM(prompt, apiKey);
 
     expect(result).toBe('Default response');
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       'https://api.openai.com/v1/chat/completions',
       {
         method: 'POST',
@@ -65,7 +65,7 @@ describe('callLLM', () => {
     const mockResponse = {
       choices: [{ message: { content: 'Response from custom model' } }],
     };
-    vi.mocked(global.fetch).mockResolvedValueOnce({
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     } as Response);
@@ -77,7 +77,7 @@ describe('callLLM', () => {
     const result = await callLLM(prompt, apiKey, customModel);
 
     expect(result).toBe('Response from custom model');
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
         body: JSON.stringify({
@@ -100,7 +100,7 @@ describe('callLLM', () => {
     const mockResponse = {
       choices: [{ message: { content: 'Local response' } }],
     };
-    vi.mocked(global.fetch).mockResolvedValueOnce({
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     } as Response);
@@ -110,7 +110,7 @@ describe('callLLM', () => {
     const result = await callLLM(prompt, apiKey);
 
     expect(result).toBe('Local response');
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       localUrl,
       expect.objectContaining({
         method: 'POST',
@@ -126,7 +126,7 @@ describe('callLLM', () => {
     } as any);
 
     // Setup fetch mock for failed request
-    vi.mocked(global.fetch).mockResolvedValueOnce({
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: false,
       statusText: 'Unauthorized',
     } as Response);

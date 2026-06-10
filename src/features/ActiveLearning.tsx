@@ -57,19 +57,18 @@ export const ActiveLearning: React.FC = () => {
           if (results && results.length > 0) {
             setSourceChunks(results.map((r: any) => r.text));
             broaderContext = results.map((r: any) => r.text).join('\n\n');
-            broaderContext = sanitizePromptInput(broaderContext);
+            broaderContext = sanitizePromptInput(broaderContext, 'broader_context');
           }
         } catch (e) { /* silently fall back */ }
       }
-      const sanitizedContext = sanitizePromptInput(context);
+      const sanitizedContext = sanitizePromptInput(context, 'context');
       const prompt = `Based on the following context, generate exactly 3 short, open-ended questions to test the student's understanding.
 Format the output as a JSON array of strings. Do not include markdown blocks.
 Example: ["Question 1?", "Question 2?", "Question 3?"]
 
-<context>
 ${sanitizedContext}
-</context>
-${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context>' : ''}`;
+
+${broaderContext}`;
       const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
       const parsedQuestions = JSON.parse(cleanJson);
@@ -120,29 +119,24 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
           const results = await searchIndex(activeConcept.title, 3, activeCourse.id);
           if (results && results.length > 0) {
             broaderContext = results.map((r: any) => r.text).join('\n\n');
-            broaderContext = sanitizePromptInput(broaderContext);
+            broaderContext = sanitizePromptInput(broaderContext, 'broader_context');
           }
         } catch (e) { /* silently fall back */ }
       }
-      const sanitizedContext = sanitizePromptInput(activeConcept.content);
-      const sanitizedQuestion = sanitizePromptInput(questions[index]);
-      const sanitizedAnswer = sanitizePromptInput(answers[index]);
+      const sanitizedContext = sanitizePromptInput(activeConcept.content, 'context');
+      const sanitizedQuestion = sanitizePromptInput(questions[index], 'question');
+      const sanitizedAnswer = sanitizePromptInput(answers[index], 'student_answer');
       const prompt = `Is the student's answer correct based on the provided context? If not, provide a 1-sentence hint.
 Output ONLY a JSON object matching this schema, without markdown formatting:
 { "isCorrect": boolean, "hint": string }
 
-<context>
 ${sanitizedContext}
-</context>
-${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context>' : ''}
 
-<question>
+${broaderContext}
+
 ${sanitizedQuestion}
-</question>
 
-<student_answer>
-${sanitizedAnswer}
-</student_answer>`;
+${sanitizedAnswer}`;
       const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
       const parsedFeedback = JSON.parse(cleanJson) as QuizFeedback;

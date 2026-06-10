@@ -16,8 +16,26 @@ export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [sourceChunks, setSourceChunks] = useState<string[]>([]);
+  const [sourcePassages, setSourcePassages] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
+
+  useEffect(() => {
+    const fetchSourcePassages = async () => {
+      if (activeConcept?.title && activeCourse?.id) {
+        try {
+          const results = await searchIndex(activeConcept.title, 5, activeCourse.id);
+
+          setSourcePassages(results.map(r => r.text));
+        } catch {
+          setSourcePassages([]);
+        }
+      } else {
+        setSourcePassages([]);
+      }
+    };
+    fetchSourcePassages();
+  }, [activeConcept?.id, activeCourse?.id]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -59,7 +77,7 @@ export const ActiveLearning: React.FC = () => {
             broaderContext = results.map((r: any) => r.text).join('\n\n');
             broaderContext = sanitizePromptInput(broaderContext);
           }
-        } catch (e) { /* silently fall back */ }
+        } catch { /* silently fall back */ }
       }
       const sanitizedContext = sanitizePromptInput(context);
       const prompt = `Based on the following context, generate exactly 3 short, open-ended questions to test the student's understanding.
@@ -78,7 +96,7 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
       } else {
         throw new Error('Invalid questions format');
       }
-    } catch (e) {
+    } catch {
       setQuestionsError(true);
       showToast('Could not generate questions for this concept.', 'error');
     } finally {
@@ -95,7 +113,7 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
       setAnswers(['', '', '']);
       setFeedback([null, null, null]);
     }
-  }, [activeConcept?.id, apiKey]);
+  }, [activeConcept?.id, activeConcept?.content, activeConcept?.status, apiKey]);
 
   const handleAnswerChange = (index: number, val: string) => {
     const newAnswers = [...answers];
@@ -122,7 +140,7 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
             broaderContext = results.map((r: any) => r.text).join('\n\n');
             broaderContext = sanitizePromptInput(broaderContext);
           }
-        } catch (e) { /* silently fall back */ }
+        } catch { /* silently fall back */ }
       }
       const sanitizedContext = sanitizePromptInput(activeConcept.content);
       const sanitizedQuestion = sanitizePromptInput(questions[index]);
@@ -171,7 +189,7 @@ ${sanitizedAnswer}
           setShowCourseComplete(true);
         }
       }
-    } catch (e) {
+    } catch {
       showToast('Grading failed. Please try again.', 'error');
     } finally {
       const done = [...gradingIndices];
@@ -276,9 +294,17 @@ ${sanitizedAnswer}
             <div className="w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto md:border-r border-b md:border-b-0 border-gray-200 p-8">
               <article className="prose max-w-none">
                 <h1 className="text-3xl font-bold mb-6 text-gray-900">{activeConcept.title}</h1>
-                <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                  {activeConcept.content || <span className="text-gray-500 italic">No content available.</span>}
-                </div>
+                {sourcePassages.length > 0 ? (
+                  sourcePassages.map((passage, idx) => (
+                    <blockquote key={idx} className="border-l-4 border-gray-200 pl-4 mb-4 text-gray-800 leading-relaxed whitespace-pre-wrap">
+                      {passage}
+                    </blockquote>
+                  ))
+                ) : (
+                  <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    {activeConcept.content || <span className="text-gray-500 italic">No content available.</span>}
+                  </div>
+                )}
               </article>
             </div>
             <div className="w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto bg-gray-50 p-8">

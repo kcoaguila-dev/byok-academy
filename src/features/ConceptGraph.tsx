@@ -17,7 +17,7 @@ interface NodeLayout {
 }
 
 export const ConceptGraph: React.FC<ConceptGraphProps> = ({ course, activeConcept, onSelectConcept }) => {
-  const { nodes, links, width, height } = useMemo(() => {
+  const { nodes, links, viewBox } = useMemo(() => {
     // Determine level for each node
     const levels = new Map<string, number>();
     const conceptMap = new Map<string, Concept>();
@@ -113,7 +113,32 @@ export const ConceptGraph: React.FC<ConceptGraphProps> = ({ course, activeConcep
       }
     });
 
-    return { nodes: layoutNodes, links: layoutLinks, width: totalWidth, height: totalHeight, NODE_WIDTH, NODE_HEIGHT };
+    // Calculate actual bounds for a tight viewBox
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    if (layoutNodes.length === 0) {
+      minX = 0; maxX = 800; minY = 0; maxY = 400;
+    } else {
+      layoutNodes.forEach(n => {
+        // Node coordinates are the center, width is 180, height is 40
+        minX = Math.min(minX, n.x - NODE_WIDTH / 2);
+        maxX = Math.max(maxX, n.x + NODE_WIDTH / 2);
+        minY = Math.min(minY, n.y - NODE_HEIGHT / 2);
+        maxY = Math.max(maxY, n.y + NODE_HEIGHT / 2);
+      });
+    }
+
+    const padding = 60;
+    const viewBoxX = minX - padding;
+    const viewBoxY = minY - padding;
+    const viewBoxWidth = (maxX - minX) + padding * 2;
+    const viewBoxHeight = (maxY - minY) + padding * 2;
+    const viewBoxStr = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
+
+    return { nodes: layoutNodes, links: layoutLinks, width: totalWidth, height: totalHeight, NODE_WIDTH, NODE_HEIGHT, viewBox: viewBoxStr };
   }, [course]);
 
   const containerStyle: React.CSSProperties = {
@@ -121,17 +146,14 @@ export const ConceptGraph: React.FC<ConceptGraphProps> = ({ course, activeConcep
     height: '100%',
   };
 
-  if (course.concepts.length > 12) {
-    containerStyle.maxHeight = '600px';
-    containerStyle.overflowY = 'auto';
-    containerStyle.overflowX = 'auto';
-  } else {
-    containerStyle.overflow = 'auto';
-  }
-
   return (
     <div style={containerStyle} className="bg-gray-50 flex items-center justify-center p-4">
-      <svg width={width} height={height} style={{ minWidth: width, minHeight: height }}>
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={viewBox}
+        preserveAspectRatio="xMidYMid meet"
+      >
         <defs>
           <marker
             id="arrowhead"
@@ -170,6 +192,7 @@ export const ConceptGraph: React.FC<ConceptGraphProps> = ({ course, activeConcep
           let fillColor = '#FFFFFF';
           let textColor = '#374151'; // text-gray-700
           let borderColor = '#D1D5DB'; // border-gray-300
+          let strokeWidth = "2";
 
           if (node.isLocked) {
             fillColor = '#F3F4F6'; // bg-gray-100
@@ -177,11 +200,12 @@ export const ConceptGraph: React.FC<ConceptGraphProps> = ({ course, activeConcep
           } else if (activeConcept?.id === node.id) {
             fillColor = '#DBEAFE'; // bg-blue-100
             textColor = '#1E40AF'; // text-blue-800
-            borderColor = '#93C5FD'; // border-blue-300
+            borderColor = '#2563eb'; // #2563eb blue
+            strokeWidth = "3";
           } else if (node.concept.status === 'completed') {
-            fillColor = '#DCFCE7'; // bg-green-100
-            textColor = '#166534'; // text-green-800
-            borderColor = '#86EFAC'; // border-green-300
+            fillColor = '#16a34a'; // green fill
+            textColor = '#FFFFFF'; // white text
+            borderColor = '#15803d'; // dark green border
           }
 
           const cursor = node.isLocked ? 'not-allowed' : 'pointer';
@@ -195,7 +219,7 @@ export const ConceptGraph: React.FC<ConceptGraphProps> = ({ course, activeConcep
                   onSelectConcept(node.concept);
                 }
               }}
-              style={{ cursor }}
+              style={{ cursor, opacity: node.isLocked ? 0.5 : 1 }}
             >
               <rect
                 x="-90"
@@ -205,7 +229,7 @@ export const ConceptGraph: React.FC<ConceptGraphProps> = ({ course, activeConcep
                 rx="8"
                 fill={fillColor}
                 stroke={borderColor}
-                strokeWidth="2"
+                strokeWidth={strokeWidth}
                 className="transition-colors duration-200"
               />
               <text

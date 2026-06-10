@@ -5,7 +5,7 @@
 ## 🚀 How to Use (No Setup Required)
 
 You can access the live, fully-functional web app directly from your browser:
-**[Live App URL]**
+**[https://kcoaguila-dev.github.io/byok-academy/](https://kcoaguila-dev.github.io/byok-academy/)**
 
 To get started:
 1. Open the link above.
@@ -31,10 +31,12 @@ BYOK Academy is built with a fundamentally different approach to modern AI appli
 
 ## ✨ Key Features
 
-*   **Dynamic Syllabus Generation:** Upload a PDF and watch as the AI extracts core concepts and generates a structured, directed prerequisite graph tailored to your material.
-*   **Multi-Chunk PDF Parsing:** Robust client-side parsing that seamlessly handles large documents by intelligently chunking text.
-*   **Split-Screen Active Learning UI:** Read the source material on the left while actively testing your knowledge on the right.
-*   **Real-Time AI Quiz Grading Loop:** Automatically generates quizzes based on the current concept, evaluates your answers, and provides instant, constructive feedback and hints.
+*   **Multi-Provider LLM Support:** Seamlessly connect to OpenAI, Anthropic, Gemini, or use local models.
+*   **Dynamic Syllabus & Prerequisite Graph:** Upload a PDF to automatically generate a structured learning path with enforced prerequisites.
+*   **Multi-Course Library:** Manage and switch between multiple courses and subjects effortlessly.
+*   **RAG-Augmented Quizzes:** Experience real-time AI quiz grading powered by Retrieval-Augmented Generation for highly contextual feedback.
+*   **Split-Screen Active Learning:** Display source PDF passages directly alongside your interactive learning environment.
+*   **Mobile-Responsive Layout:** Learn on the go with a fully responsive interface.
 
 ## 🔒 Security & Privacy
 
@@ -51,6 +53,9 @@ Your privacy is the core design principle of BYOK Academy.
 *   **Styling:** [TailwindCSS](https://tailwindcss.com/)
 *   **State Management:** [Zustand](https://zustand-demo.pmnd.rs/)
 *   **PDF Parsing:** [pdfjs-dist](https://mozilla.github.io/pdf.js/)
+*   **Vector Search:** Orama
+*   **Embeddings:** all-MiniLM-L6-v2
+*   **IndexedDB Persistence:** localforage
 
 ## 💻 For Developers (Local Setup)
 

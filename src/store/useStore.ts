@@ -130,7 +130,21 @@ export const useStore = create<AppState>((set, get) => {
       }
     },
     activeConcept: null,
-    setActiveConcept: (concept) => set({ activeConcept: concept }),
+    setActiveConcept: (concept) => {
+      if (concept && concept.status === 'pending') {
+        const { activeCourse } = get();
+        const updatedConcept = { ...concept, status: 'in-progress' as const };
+        if (activeCourse) {
+          const updatedConcepts = activeCourse.concepts.map(c => c.id === concept.id ? updatedConcept : c);
+          const updatedCourse = { ...activeCourse, concepts: updatedConcepts };
+          localforage.setItem('activeCourse', updatedCourse);
+          get().updateCourse(updatedCourse);
+          set({ activeCourse: updatedCourse, activeConcept: updatedConcept });
+          return;
+        }
+      }
+      set({ activeConcept: concept });
+    },
     completeActiveConcept: () => {
       const { activeCourse, activeConcept } = get();
       if (!activeCourse || !activeConcept) return;

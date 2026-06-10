@@ -17,7 +17,7 @@ interface NodeLayout {
 }
 
 export const ConceptGraph: React.FC<ConceptGraphProps> = ({ course, activeConcept, onSelectConcept }) => {
-  const { nodes, links, width, height, viewBox } = useMemo(() => {
+  const { nodes, links, viewBox } = useMemo(() => {
     // Determine level for each node
     const levels = new Map<string, number>();
     const conceptMap = new Map<string, Concept>();

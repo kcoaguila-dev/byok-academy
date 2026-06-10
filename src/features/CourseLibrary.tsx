@@ -9,7 +9,7 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { DataBackup } from '../components/DataBackup';
 
 export const CourseLibrary: React.FC = () => {
-  const { apiKey, courses, selectCourse, deleteCourse, setParsedText } = useStore();
+  const { apiKey, courses, setActiveCourse, deleteCourse, setParsedText } = useStore();
   const { showToast } = useToast();
   const { generateSyllabus, loading, error } = useOntology();
   const { confirm } = useConfirm();
@@ -195,10 +195,10 @@ export const CourseLibrary: React.FC = () => {
 
               <div className="flex gap-2 mt-auto">
                 <button
-                  onClick={() => selectCourse(course.id)}
+                  onClick={() => setActiveCourse(course)}
                   className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-md font-medium hover:bg-gray-900 transition-colors"
                 >
-                  Continue
+                  Load
                 </button>
                 <button
                   onClick={async () => {

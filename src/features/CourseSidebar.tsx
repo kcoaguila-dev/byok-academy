@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Course, Concept } from '../types';
 import { ConceptGraph } from './ConceptGraph';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -22,6 +22,8 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
   activeConcept,
   setActiveConcept,
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
   if (!isSidebarOpen) return null;
 
   return (
@@ -40,9 +42,21 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
               <ConceptGraph course={activeCourse} activeConcept={activeConcept} onSelectConcept={setActiveConcept} />
             </ErrorBoundary>
           ) : (
-            activeCourse.concepts.map((c) => {
-              const isActive = activeConcept?.id === c.id;
-              const isCompleted = c.status === 'completed';
+            <>
+              <div className="mb-2">
+                <input
+                  type="text"
+                  placeholder="Search concepts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              {activeCourse.concepts
+                .filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((c) => {
+                  const isActive = activeConcept?.id === c.id;
+                  const isCompleted = c.status === 'completed';
               const uncompletedPrereqs = c.prerequisites?.map(prereqId =>
                 activeCourse.concepts.find(p => p.id === prereqId)
               ).filter(p => p && p.status !== 'completed') || [];
@@ -66,7 +80,8 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
                   )}
                 </div>
               );
-            })
+            })}
+            </>
           )}
         </div>
       </div>

@@ -12,4 +12,8 @@ export const sanitizeInput = (input: string): string => {
     .trim();
 };
 
-export const sanitizePromptInput = sanitizeInput;
+export const sanitizePromptInput = (input: string, tag: string = 'input'): string => {
+  const sanitized = sanitizeInput(input);
+  if (!sanitized) return '';
+  return `<${tag}>\n\`\`\`\n${sanitized}\n\`\`\`\n</${tag}>`;
+};

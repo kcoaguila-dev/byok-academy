@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Course, Concept } from '../types';
 import { ConceptGraph } from './ConceptGraph';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 interface CourseSidebarProps {
   isSidebarOpen: boolean;
@@ -35,7 +36,9 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {viewMode === 'graph' ? (
-            <ConceptGraph course={activeCourse} activeConcept={activeConcept} onSelectConcept={setActiveConcept} />
+            <ErrorBoundary onError={(msg) => console.error(msg)}>
+              <ConceptGraph course={activeCourse} activeConcept={activeConcept} onSelectConcept={setActiveConcept} />
+            </ErrorBoundary>
           ) : (
             activeCourse.concepts.map((c) => {
               const isActive = activeConcept?.id === c.id;

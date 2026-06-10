@@ -2,6 +2,30 @@ import { describe, it, expect } from 'vitest';
 import { chunkText } from './chunker';
 
 describe('chunkText', () => {
+  it('should produce chunks within the configured size limit', () => {
+    const text = 'This is the first sentence. This is the second sentence. And a third one.';
+    const result = chunkText(text, 30, 0);
+    expect(result).toEqual([
+      'This is the first sentence.',
+      'This is the second sentence.',
+      'And a third one.'
+    ]);
+    result.forEach(chunk => {
+      expect(chunk.length).toBeLessThanOrEqual(30);
+    });
+  });
+
+  it('should fall on sentence endings for chunk boundaries', () => {
+    const text = 'First sentence. Second sentence! Third sentence? Fourth one.';
+    const result = chunkText(text, 20, 0);
+    expect(result).toEqual([
+      'First sentence.',
+      'Second sentence!',
+      'Third sentence?',
+      'Fourth one.'
+    ]);
+  });
+
   it('should return empty array for empty string', () => {
     expect(chunkText('')).toEqual([]);
   });

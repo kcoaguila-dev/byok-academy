@@ -8,8 +8,6 @@ import { sanitizePromptInput } from '../lib/sanitize';
 import { CourseSidebar } from './CourseSidebar';
 import { SourcePanel } from './SourcePanel';
 import { QuizPanel, type QuizFeedback } from './QuizPanel';
-import { ErrorBoundary } from '../components/ErrorBoundary';
-
 export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);

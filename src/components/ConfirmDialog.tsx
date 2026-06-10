@@ -42,8 +42,9 @@ export const ConfirmProvider: React.FC<{ children: ReactNode }> = ({ children })
     <ConfirmContext.Provider value={{ confirm }}>
       {children}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-60"></div>
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl relative z-[60]">
             <p className="text-gray-800 text-lg mb-6">{message}</p>
             <div className="flex justify-end space-x-3">
               <button

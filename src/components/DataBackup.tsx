@@ -40,6 +40,7 @@ export const DataBackup = () => {
         const result = importCoursesData(text);
         if (result.success) {
           showToast('Backup imported successfully.', 'success');
+          showToast('Note: search index will rebuild when you re-open each course.', 'info');
         } else {
           showToast(result.error || 'Failed to import backup.', 'error');
         }

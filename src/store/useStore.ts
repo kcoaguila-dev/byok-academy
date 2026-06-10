@@ -178,6 +178,7 @@ export const useStore = create<AppState>((set, get) => {
         }
 
         localforage.setItem('courses', validCourses);
+        localforage.removeItem('orama_index');
 
         const state = get();
         const activeCourseId = state.activeCourse?.id;

@@ -8,7 +8,6 @@ import { sanitizePromptInput } from '../lib/sanitize';
 import { CourseSidebar } from './CourseSidebar';
 import { SourcePanel } from './SourcePanel';
 import { QuizPanel, type QuizFeedback } from './QuizPanel';
-import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept } = useStore();
@@ -17,6 +16,7 @@ export const ActiveLearning: React.FC = () => {
   const [sourcePassages, setSourcePassages] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
+  const [activeTab, setActiveTab] = useState<'source' | 'quiz'>('quiz');
 
   useEffect(() => {
     const fetchSourcePassages = async () => {
@@ -265,14 +265,31 @@ ${sanitizedAnswer}`;
           </button>
         </div>
         {activeConcept ? (
-          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex md:hidden border-b border-gray-200 bg-white">
+              <button
+                className={`flex-1 py-3 text-sm font-medium border-b-2 text-center transition-colors ${activeTab === 'source' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('source')}
+              >
+                Source
+              </button>
+              <button
+                className={`flex-1 py-3 text-sm font-medium border-b-2 text-center transition-colors ${activeTab === 'quiz' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('quiz')}
+              >
+                Quiz
+              </button>
+            </div>
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
             <SourcePanel
               activeConcept={activeConcept}
               sourcePassages={sourcePassages}
+              className={`${activeTab === 'source' ? 'block' : 'hidden'} md:block`}
             />
             <QuizPanel
               activeConcept={activeConcept}
               activeCourse={activeCourse}
+              className={`${activeTab === 'quiz' ? 'block' : 'hidden'} md:block`}
               questions={questions}
               loadingQuestions={loadingQuestions}
               questionsError={questionsError}
@@ -286,6 +303,7 @@ ${sanitizedAnswer}`;
               setActiveCourse={setActiveCourse}
               setActiveConcept={setActiveConcept}
             />
+            </div>
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400">

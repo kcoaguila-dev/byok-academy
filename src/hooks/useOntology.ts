@@ -70,7 +70,7 @@ ${sanitizePromptInput(fullText, 'source_text')}
           };
         });
 
-        useStore.getState().addCourse(course);
+        useStore.getState().saveCourse(course);
         setActiveCourse(course);
         break; // Success, exit loop
       } catch (err) {

@@ -10,20 +10,18 @@ export const useOntology = () => {
   const { apiKey, modelName, setActiveCourse } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const { showToast } = useToast();
 
   const generateSyllabus = async (text: string) => {
     setLoading(true);
     setError(null);
-    let attempts = 0;
-    const maxAttempts = 3;
+    setRetryCount(0);
 
-    while (attempts < maxAttempts) {
-      try {
-        const chunks = chunkText(text);
-        const fullText = chunks.join('\n');
+    const chunks = chunkText(text);
+    const fullText = chunks.join('\n');
 
-        const prompt = `Based on the following text, create a syllabus with concepts. Format the output as a JSON object representing a directed prerequisite graph matching this TypeScript interface:
+    let basePrompt = `Based on the following text, create a syllabus with concepts. Format the output as a JSON object representing a directed prerequisite graph matching this TypeScript interface:
         {
           "id": "course-id",
           "title": "Course Name",
@@ -43,7 +41,13 @@ export const useOntology = () => {
 ${sanitizePromptInput(fullText, 'source_text')}
         `;
 
-        const response = await callLLM(prompt, apiKey, modelName);
+    let attempt = 0;
+    let success = false;
+    let currentPrompt = basePrompt;
+
+    while (attempt < 2 && !success) {
+      try {
+        const response = await callLLM(currentPrompt, apiKey, modelName);
         // Clean up potential markdown formatting
         const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
         const course: Course = JSON.parse(cleanJson);
@@ -72,21 +76,22 @@ ${sanitizePromptInput(fullText, 'source_text')}
 
         useStore.getState().saveCourse(course);
         setActiveCourse(course);
-        break; // Success, exit loop
+        success = true;
       } catch (err) {
-        attempts++;
-        if (attempts >= maxAttempts) {
-          if (err instanceof Error) {
-            setError(err.message);
-          } else {
-            setError('An unknown error occurred');
-          }
-          showToast('Failed to generate syllabus. Please try again.', 'error');
+        attempt++;
+        if (attempt === 1) {
+          setRetryCount(1);
+          currentPrompt = basePrompt + '\nYour previous response was not valid JSON. Return ONLY a valid JSON array, no markdown, no explanation.';
+        } else {
+          setError('Could not parse the syllabus. Try a different model or a shorter document.');
+          showToast('Could not parse the syllabus. Try a different model or a shorter document.', 'error');
+          setRetryCount(0);
         }
       }
     }
+
     setLoading(false);
   };
 
-  return { generateSyllabus, loading, error };
+  return { generateSyllabus, loading, error, retryCount };
 };

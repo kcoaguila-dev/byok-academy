@@ -14,7 +14,7 @@ export const UploadDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{text: string; documentId: string}[]>([]);
   const { setParsedText } = useStore();
-  const { generateSyllabus, loading, error } = useOntology();
+  const { generateSyllabus, loading, error, retryCount } = useOntology();
   const { apiKey } = useBYOK();
   const { showToast } = useToast();
 
@@ -99,7 +99,7 @@ export const UploadDashboard: React.FC = () => {
           <div className="space-y-4 w-full max-w-md mx-auto">
             <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
             <p className="text-lg text-gray-700 font-medium">
-              {isProcessing ? 'Extracting text from PDF...' : 'Generating syllabus...'}
+              {isProcessing ? 'Extracting text from PDF...' : (retryCount > 0 ? 'Retrying...' : 'Generating syllabus...')}
             </p>
             {isProcessing && (
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">

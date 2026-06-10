@@ -34,6 +34,21 @@ export const ActiveLearning: React.FC = () => {
   const [showCourseComplete, setShowCourseComplete] = useState(false);
   const { showToast } = useToast();
 
+  const fetchBroaderContext = async (title: string | undefined, courseId: string | undefined): Promise<{ contextText: string, chunks: string[] }> => {
+    let contextText = '';
+    let chunks: string[] = [];
+    if (title && courseId) {
+      try {
+        const results = await searchIndex(title, 3, courseId);
+        if (results && results.length > 0) {
+          chunks = results.map((r: any) => r.text);
+          contextText = sanitizePromptInput(chunks.join('\n\n'));
+        }
+      } catch (e) { /* silently fall back */ }
+    }
+    return { contextText, chunks };
+  };
+
   useEffect(() => {
     setActiveDocumentId(activeCourse?.id ?? null);
   }, [activeCourse?.id]);
@@ -50,17 +65,11 @@ export const ActiveLearning: React.FC = () => {
     setAnswers(['', '', '']);
     setFeedback([null, null, null]);
     try {
-      let broaderContext = '';
-      if (activeConcept?.title && activeCourse?.id) {
-        try {
-          const results = await searchIndex(activeConcept.title, 3, activeCourse.id);
-          if (results && results.length > 0) {
-            setSourceChunks(results.map((r: any) => r.text));
-            broaderContext = results.map((r: any) => r.text).join('\n\n');
-            broaderContext = sanitizePromptInput(broaderContext);
-          }
-        } catch (e) { /* silently fall back */ }
+      const { contextText: broaderContext, chunks } = await fetchBroaderContext(activeConcept?.title, activeCourse?.id);
+      if (chunks.length > 0) {
+        setSourceChunks(chunks);
       }
+
       const sanitizedContext = sanitizePromptInput(context);
       const prompt = `Based on the following context, generate exactly 3 short, open-ended questions to test the student's understanding.
 Format the output as a JSON array of strings. Do not include markdown blocks.
@@ -114,16 +123,8 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
     newGrading[index] = true;
     setGradingIndices(newGrading);
     try {
-      let broaderContext = '';
-      if (activeConcept?.title && activeCourse?.id) {
-        try {
-          const results = await searchIndex(activeConcept.title, 3, activeCourse.id);
-          if (results && results.length > 0) {
-            broaderContext = results.map((r: any) => r.text).join('\n\n');
-            broaderContext = sanitizePromptInput(broaderContext);
-          }
-        } catch (e) { /* silently fall back */ }
-      }
+      const { contextText: broaderContext } = await fetchBroaderContext(activeConcept?.title, activeCourse?.id);
+
       const sanitizedContext = sanitizePromptInput(activeConcept.content);
       const sanitizedQuestion = sanitizePromptInput(questions[index]);
       const sanitizedAnswer = sanitizePromptInput(answers[index]);

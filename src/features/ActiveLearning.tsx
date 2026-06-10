@@ -93,9 +93,13 @@ export const ActiveLearning: React.FC = () => {
 Format the output as a JSON array of strings. Do not include markdown blocks.
 Example: ["Question 1?", "Question 2?", "Question 3?"]
 
+Please explicitly derive the questions from the <broader_context> block when it is present. Only fall back to using <context> if the broader context is empty.
+
 ${sanitizedContext}
 
-${broaderContext}`;
+<broader_context>
+${broaderContext}
+</broader_context>`;
       const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
       const parsedQuestions = JSON.parse(cleanJson);
@@ -146,12 +150,15 @@ ${broaderContext}`;
       const sanitizedQuestion = sanitizePromptInput(questions[index], 'question');
       const sanitizedAnswer = sanitizePromptInput(answers[index], 'student_answer');
       const prompt = `Is the student's answer correct based on the provided context? If not, provide a 1-sentence hint.
+Evaluate the answer against both <context> and <broader_context> when available. In the hint, cite whether the correct answer comes from <context> or <broader_context>.
 Output ONLY a JSON object matching this schema, without markdown formatting:
 { "isCorrect": boolean, "hint": string }
 
 ${sanitizedContext}
 
+<broader_context>
 ${broaderContext}
+</broader_context>
 
 ${sanitizedQuestion}
 

@@ -4,7 +4,7 @@ import localforage from 'localforage';
 
 interface AppState {
   courses: Course[];
-  addCourse: (course: Course) => void;
+  saveCourse: (course: Course) => void;
   updateCourse: (course: Course) => void;
   deleteCourse: (courseId: string) => void;
   selectCourse: (courseId: string) => void;
@@ -59,7 +59,7 @@ export const useStore = create<AppState>((set, get) => {
 
   return {
     courses: [],
-    addCourse: (course) => {
+    saveCourse: (course) => {
       const { courses } = get();
       const updatedCourses = [...courses, course];
       localforage.setItem('courses', updatedCourses);

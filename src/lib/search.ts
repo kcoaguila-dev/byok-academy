@@ -1,4 +1,4 @@
-import { create, insertMultiple, removeMultiple, search, save, load, type Orama } from '@orama/orama';
+import { create, insertMultiple, removeMultiple, search, save, load, type Orama, type SearchParams, type RawData, type TypedDocument } from '@orama/orama';
 import { pipeline } from '@xenova/transformers';
 import localforage from 'localforage';
 
@@ -8,8 +8,15 @@ export const setActiveDocumentId = (id: string | null): void => {
   activeDocumentId = id;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let oramaDb: Orama<any> | null = null;
+export const oramaSchema = {
+  text: 'string',
+  documentId: 'string',
+  embedding: 'vector[384]',
+} as const;
+
+export type AppOrama = Orama<typeof oramaSchema>;
+
+let oramaDb: AppOrama | null = null;
 let extractor: unknown = null;
 
 const getExtractor = async () => {
@@ -46,33 +53,25 @@ const storageAdapter = {
   }
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const initIndex = async (): Promise<Orama<any>> => {
-  if (oramaDb) return oramaDb;
+const getOramaConfig = () => ({
+  schema: oramaSchema,
+});
 
-  const getOramaConfig = () => ({
-    schema: {
-      text: 'string',
-      documentId: 'string',
-      embedding: 'vector[384]',
-    },
-  });
+export const initIndex = async (): Promise<AppOrama> => {
+  if (oramaDb) return oramaDb;
 
   try {
     const savedData = await storageAdapter.get(INDEX_KEY);
     if (savedData) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      oramaDb = await create(getOramaConfig() as any);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await load(oramaDb, savedData as any);
+      oramaDb = await create(getOramaConfig());
+      await load(oramaDb, savedData as RawData);
       return oramaDb;
     }
   } catch (error) {
     console.error('Failed to restore Orama index from localforage', error);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  oramaDb = await create(getOramaConfig() as any);
+  oramaDb = await create(getOramaConfig());
 
   return oramaDb;
 };
@@ -108,7 +107,7 @@ export const indexDocument = async (chunks: string[], documentId: string, onProg
   const documents = await Promise.all(
     chunks.map(async (chunk) => {
       const output = await extract(chunk, { pooling: 'mean', normalize: true });
-      const embedding = Array.from(output.data);
+      const embedding = Array.from(output.data) as number[];
       processed++;
       if (onProgress) {
         onProgress(Math.round((processed / total) * 100));
@@ -142,14 +141,13 @@ export const searchIndex = async (query: string, limit: number = 3, documentId?:
   const extract = await getExtractor();
 
   const output = await extract(query, { pooling: 'mean', normalize: true });
-  const queryEmbedding = Array.from(output.data);
+  const queryEmbedding = Array.from(output.data) as number[];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const searchParams: any = {
+  const searchParams: SearchParams<AppOrama, TypedDocument<AppOrama>> = {
     term: query,
     mode: 'hybrid',
     vector: {
-      value: queryEmbedding as number[],
+      value: queryEmbedding,
       property: 'embedding',
     },
     limit,

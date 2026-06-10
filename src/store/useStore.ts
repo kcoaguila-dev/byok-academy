@@ -28,17 +28,13 @@ interface AppState {
   importCoursesData: (json: string) => { success: boolean; error?: string };
 }
 
+const initialActiveCourse = await localforage.getItem<Course>('activeCourse');
+const initialCourses = await localforage.getItem<Course[]>('courses');
+
 export const useStore = create<AppState>((set, get) => {
   // Load initial state asynchronously
   localforage.getItem<string[]>('parsedText').then((text) => {
     if (text) set({ parsedText: text });
-  });
-  localforage.getItem<Course>('activeCourse').then((course) => {
-    if (course) set({ activeCourse: course });
-  });
-
-  localforage.getItem<Course[]>('courses').then((loadedCourses) => {
-    if (loadedCourses) set({ courses: loadedCourses });
   });
 
   localforage.getItem<string>('apiKey').then((key) => {
@@ -58,7 +54,7 @@ export const useStore = create<AppState>((set, get) => {
   });
 
   return {
-    courses: [],
+    courses: initialCourses || [],
     saveCourse: (course) => {
       const { courses } = get();
       const updatedCourses = [...courses, course];
@@ -119,7 +115,7 @@ export const useStore = create<AppState>((set, get) => {
       localforage.setItem('parsedText', text);
       set({ parsedText: text });
     },
-    activeCourse: null,
+    activeCourse: initialActiveCourse || null,
     setActiveCourse: (course) => {
       localforage.setItem('activeCourse', course);
       if (course) {
@@ -130,7 +126,21 @@ export const useStore = create<AppState>((set, get) => {
       }
     },
     activeConcept: null,
-    setActiveConcept: (concept) => set({ activeConcept: concept }),
+    setActiveConcept: (concept) => {
+      set({ activeConcept: concept });
+
+      const { activeCourse } = get();
+      if (concept?.status === 'completed' && activeCourse) {
+        const updatedConcepts = activeCourse.concepts.map(c =>
+          c.id === concept.id ? { ...c, status: 'completed' as const } : c
+        );
+        const updatedCourse = { ...activeCourse, concepts: updatedConcepts };
+
+        localforage.setItem('activeCourse', updatedCourse);
+        get().updateCourse(updatedCourse);
+        set({ activeCourse: updatedCourse });
+      }
+    },
     completeActiveConcept: () => {
       const { activeCourse, activeConcept } = get();
       if (!activeCourse || !activeConcept) return;

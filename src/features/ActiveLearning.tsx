@@ -2,15 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { callLLM } from '../lib/llmRouter';
 import { searchIndex, setActiveDocumentId } from '../lib/search';
-import { ConceptGraph } from './ConceptGraph';
 import localforage from 'localforage';
 import { useToast } from '../components/Toast';
 import { sanitizePromptInput } from '../lib/sanitize';
-
-interface QuizFeedback {
-  isCorrect: boolean;
-  hint: string;
-}
+import { CourseSidebar } from './CourseSidebar';
+import { SourcePanel } from './SourcePanel';
+import { QuizPanel, type QuizFeedback } from './QuizPanel';
 
 export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept } = useStore();
@@ -237,40 +234,15 @@ ${sanitizedAnswer}`;
         </div>
       )}
 
-      {isSidebarOpen && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />
-          <div className="fixed inset-y-0 left-0 z-40 w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 flex flex-col h-full md:relative md:z-auto">
-            <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
-            <h2 className="font-bold text-gray-800 truncate" title={activeCourse.title}>{activeCourse.title}</h2>
-            <button onClick={() => setViewMode(v => v === 'list' ? 'graph' : 'list')} className="text-xs text-blue-600 hover:underline ml-2 whitespace-nowrap">
-              {viewMode === 'list' ? 'Graph View' : 'List View'}
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {viewMode === 'graph' ? (
-              <ConceptGraph course={activeCourse} activeConcept={activeConcept} onSelectConcept={setActiveConcept} />
-            ) : (
-              activeCourse.concepts.map((c) => {
-                const isActive = activeConcept?.id === c.id;
-                const isCompleted = c.status === 'completed';
-                const isLocked = !isCompleted && !!c.prerequisites?.some(prereqId => {
-                  const prereq = activeCourse.concepts.find(p => p.id === prereqId);
-                  return prereq && prereq.status !== 'completed';
-                });
-                return (
-                  <button key={c.id} onClick={() => !isLocked && setActiveConcept(c)} disabled={isLocked}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-between ${isLocked ? 'text-gray-400 cursor-not-allowed' : isActive ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:bg-gray-200'}`}>
-                    <span className="truncate pr-2" title={c.title}>{c.title}</span>
-                    {isCompleted ? <span className="text-green-500 font-bold">✓</span> : isLocked ? <span className="text-gray-400">🔒</span> : <span className="text-gray-300">○</span>}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-        </>
-      )}
+      <CourseSidebar
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        activeCourse={activeCourse}
+        activeConcept={activeConcept}
+        setActiveConcept={setActiveConcept}
+      />
       <div className="flex-1 flex flex-col min-w-0">
         <div className="bg-white border-b border-gray-200 p-2 flex items-center gap-4">
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
@@ -286,100 +258,26 @@ ${sanitizedAnswer}`;
         </div>
         {activeConcept ? (
           <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-            <div className="w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto md:border-r border-b md:border-b-0 border-gray-200 p-8">
-              <article className="prose max-w-none">
-                <h1 className="text-3xl font-bold mb-6 text-gray-900">{activeConcept.title}</h1>
-                {sourcePassages.length > 0 ? (
-                  sourcePassages.map((passage, idx) => (
-                    <blockquote key={idx} className="border-l-4 border-gray-200 pl-4 mb-4 text-gray-800 leading-relaxed whitespace-pre-wrap">
-                      {passage}
-                    </blockquote>
-                  ))
-                ) : (
-                  <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                    {activeConcept.content || <span className="text-gray-500 italic">No content available.</span>}
-                  </div>
-                )}
-              </article>
-            </div>
-            <div className="w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto bg-gray-50 p-8">
-              <div className="max-w-2xl mx-auto">
-                <h2 className="text-2xl font-bold mb-2 text-gray-800">Knowledge Check</h2>
-                <p className="text-gray-600 mb-8">Test your understanding of {activeConcept.title}</p>
-                {loadingQuestions ? (
-                  <div className="text-gray-500 animate-pulse">Generating interactive questions...</div>
-                ) : questionsError ? (
-                  <div className="flex flex-col items-center justify-center space-y-4">
-                    <p className="text-red-500">Failed to load questions.</p>
-                    <button onClick={() => activeConcept?.content && generateQuestions(activeConcept.content)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Retry</button>
-                  </div>
-                ) : activeConcept.status === 'completed' ? (
-                  <div className="flex flex-col items-center justify-center space-y-6 py-8">
-                    <div className="bg-green-100 text-green-800 px-6 py-4 rounded-xl shadow-sm border border-green-200 flex items-center gap-3">
-                      <span className="text-2xl font-bold">✓</span>
-                      <span className="text-lg font-semibold">Concept Mastered</span>
-                    </div>
-                    <p className="text-gray-600 text-center">You've completed all knowledge checks for this concept.</p>
-                    <button onClick={() => {
-                      if (!activeCourse) return;
-                      const updatedConcepts = activeCourse.concepts.map(c =>
-                        c.id === activeConcept.id ? { ...c, status: 'pending' as const } : c
-                      );
-                      const updatedCourse = { ...activeCourse, concepts: updatedConcepts };
-                      const updatedConcept = { ...activeConcept, status: 'pending' as const };
-                      setActiveCourse(updatedCourse);
-                      setActiveConcept(updatedConcept);
-                      localforage.setItem('activeCourse', updatedCourse);
-                      if (activeConcept.content) {
-                        generateQuestions(activeConcept.content);
-                      }
-                    }} className="px-6 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition">
-                      Practice Again
-                    </button>
-                  </div>
-                ) : questions.length > 0 ? (
-                  <div className="space-y-8">
-                    {sourceChunks.length > 0 && (
-                      <details className="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                        <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
-                          View source context ({sourceChunks.length} excerpts)
-                        </summary>
-                        <div className="mt-4 space-y-3">
-                          {sourceChunks.map((chunk, idx) => (
-                            <div key={idx} className="p-3 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-600">
-                              {chunk.length > 200 ? chunk.substring(0, 200) + '...' : chunk}
-                            </div>
-                          ))}
-                        </div>
-                      </details>
-                    )}
-                    {questions.map((q, i) => {
-                      const fb = feedback[i];
-                      const border = fb ? (fb.isCorrect ? 'border-green-500' : 'border-red-500') : 'border-gray-300';
-                      return (
-                        <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                          <p className="font-medium text-gray-800 mb-3">{q}</p>
-                          <textarea value={answers[i]} onChange={(e) => handleAnswerChange(i, e.target.value)} placeholder="Type your answer here..." className={`w-full p-3 rounded-lg border ${border} focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3 resize-none`} rows={3} />
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <button onClick={() => handleSubmitAnswer(i)} disabled={gradingIndices[i] || !answers[i].trim()} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                              {gradingIndices[i] ? 'Grading...' : 'Submit Answer'}
-                            </button>
-                            {fb && (
-                              <div className={`flex-1 p-3 rounded-lg text-sm ${fb.isCorrect ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-                                <span className="font-semibold mr-1">{fb.isCorrect ? 'Correct!' : 'Incorrect.'}</span>
-                                {fb.hint && <span>{fb.hint}</span>}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-gray-500">No questions available.</div>
-                )}
-              </div>
-            </div>
+            <SourcePanel
+              activeConcept={activeConcept}
+              sourcePassages={sourcePassages}
+            />
+            <QuizPanel
+              activeConcept={activeConcept}
+              activeCourse={activeCourse}
+              questions={questions}
+              loadingQuestions={loadingQuestions}
+              questionsError={questionsError}
+              sourceChunks={sourceChunks}
+              answers={answers}
+              handleAnswerChange={handleAnswerChange}
+              handleSubmitAnswer={handleSubmitAnswer}
+              gradingIndices={gradingIndices}
+              feedback={feedback}
+              generateQuestions={generateQuestions}
+              setActiveCourse={setActiveCourse}
+              setActiveConcept={setActiveConcept}
+            />
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400">

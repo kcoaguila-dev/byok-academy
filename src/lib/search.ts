@@ -17,14 +17,15 @@ export const oramaSchema = {
 export type AppOrama = Orama<typeof oramaSchema>;
 
 let oramaDb: AppOrama | null = null;
-let extractor: unknown = null;
+let extractorPromise: Promise<unknown> | null = null;
 
 const getExtractor = async () => {
-  if (!extractor) {
-    extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+  if (!extractorPromise) {
+    extractorPromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
       quantized: false,
     });
   }
+  const extractor = await extractorPromise;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return extractor as (...args: unknown[]) => Promise<any>;
 };

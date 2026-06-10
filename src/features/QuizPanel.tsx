@@ -115,7 +115,15 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({
             })}
           </div>
         ) : (
-          <div className="text-gray-500">No questions available.</div>
+          <div className="flex flex-col items-center justify-center space-y-6 py-8">
+            <p className="text-gray-600 text-center">Ready to test your knowledge on this concept?</p>
+            <button
+              onClick={() => activeConcept?.content && generateQuestions(activeConcept.content)}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+            >
+              Generate Questions
+            </button>
+          </div>
         )}
       </div>
     </div>

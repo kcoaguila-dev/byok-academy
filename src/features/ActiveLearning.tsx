@@ -114,15 +114,13 @@ ${broaderContext}
   };
 
   useEffect(() => {
-    if (activeConcept?.content && apiKey && activeConcept.status !== 'completed') {
-      generateQuestions(activeConcept.content);
-    } else if (!activeConcept?.content || !apiKey) {
-      setQuestions([]);
-      setSourceChunks([]);
-      setAnswers(['', '', '']);
-      setFeedback([null, null, null]);
-    }
-  }, [activeConcept?.id, activeConcept?.content, activeConcept?.status, apiKey]);
+    // Reset state when concept changes, wait for user to explicitly click generate
+    setQuestions([]);
+    setSourceChunks([]);
+    setAnswers(['', '', '']);
+    setFeedback([null, null, null]);
+    setQuestionsError(false);
+  }, [activeConcept?.id]);
 
   const handleAnswerChange = (index: number, val: string) => {
     const newAnswers = [...answers];

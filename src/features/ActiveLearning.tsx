@@ -6,6 +6,7 @@ import { ConceptGraph } from './ConceptGraph';
 import localforage from 'localforage';
 import { useToast } from '../components/Toast';
 import { sanitizePromptInput } from '../lib/sanitize';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 interface QuizFeedback {
   isCorrect: boolean;
@@ -249,7 +250,9 @@ ${sanitizedAnswer}`;
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {viewMode === 'graph' ? (
-              <ConceptGraph course={activeCourse} activeConcept={activeConcept} onSelectConcept={setActiveConcept} />
+              <ErrorBoundary onError={(msg) => showToast(msg, 'error')}>
+                <ConceptGraph course={activeCourse} activeConcept={activeConcept} onSelectConcept={setActiveConcept} />
+              </ErrorBoundary>
             ) : (
               activeCourse.concepts.map((c) => {
                 const isActive = activeConcept?.id === c.id;

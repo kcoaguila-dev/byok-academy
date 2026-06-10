@@ -169,6 +169,7 @@ export const CourseLibrary: React.FC = () => {
         {courses.map((course) => {
           const totalConcepts = course.concepts.length;
           const completedConcepts = course.concepts.filter(c => c.status === 'completed').length;
+          const inProgressConcepts = course.concepts.filter(c => c.status === 'in-progress').length;
           const completionPercentage = totalConcepts > 0 ? Math.round((completedConcepts / totalConcepts) * 100) : 0;
 
           return (
@@ -177,7 +178,10 @@ export const CourseLibrary: React.FC = () => {
                 <h3 className="text-xl font-bold text-gray-800 mb-2 truncate" title={course.title}>
                   {course.title}
                 </h3>
-                <p className="text-gray-600 mb-4">{totalConcepts} concepts</p>
+                <p className="text-gray-600 mb-4">
+                  {totalConcepts} concepts
+                  {inProgressConcepts > 0 && ` (${inProgressConcepts} in progress)`}
+                </p>
 
                 <div className="mb-6">
                   <div className="flex justify-between text-sm text-gray-500 mb-1">

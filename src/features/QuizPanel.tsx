@@ -22,6 +22,7 @@ interface QuizPanelProps {
   generateQuestions: (content: string) => Promise<void>;
   setActiveCourse: (course: Course | null) => void;
   setActiveConcept: (concept: Concept | null) => void;
+  className?: string;
 }
 
 export const QuizPanel: React.FC<QuizPanelProps> = ({
@@ -39,9 +40,10 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({
   generateQuestions,
   setActiveCourse,
   setActiveConcept,
+  className = '',
 }) => {
   return (
-    <div className="w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto bg-gray-50 p-8">
+    <div className={`w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto bg-gray-50 p-8 ${className}`}>
       <div className="max-w-2xl mx-auto">
         <h2 className="text-2xl font-bold mb-2 text-gray-800">Knowledge Check</h2>
         <p className="text-gray-600 mb-8">Test your understanding of {activeConcept.title}</p>

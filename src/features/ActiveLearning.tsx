@@ -16,8 +16,26 @@ export const ActiveLearning: React.FC = () => {
   const { apiKey, modelName, activeCourse, setActiveCourse, activeConcept, setActiveConcept } = useStore();
   const [questions, setQuestions] = useState<string[]>([]);
   const [sourceChunks, setSourceChunks] = useState<string[]>([]);
+  const [sourcePassages, setSourcePassages] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
+
+  useEffect(() => {
+    const fetchSourcePassages = async () => {
+      if (activeConcept?.title && activeCourse?.id) {
+        try {
+          const results = await searchIndex(activeConcept.title, 5, activeCourse.id);
+
+          setSourcePassages(results.map(r => r.text));
+        } catch {
+          setSourcePassages([]);
+        }
+      } else {
+        setSourcePassages([]);
+      }
+    };
+    fetchSourcePassages();
+  }, [activeConcept?.id, activeCourse?.id]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -33,6 +51,21 @@ export const ActiveLearning: React.FC = () => {
   const [questionsError, setQuestionsError] = useState(false);
   const [showCourseComplete, setShowCourseComplete] = useState(false);
   const { showToast } = useToast();
+
+  const fetchBroaderContext = async (title: string | undefined, courseId: string | undefined): Promise<{ contextText: string, chunks: string[] }> => {
+    let contextText = '';
+    let chunks: string[] = [];
+    if (title && courseId) {
+      try {
+        const results = await searchIndex(title, 3, courseId);
+        if (results && results.length > 0) {
+          chunks = results.map((r: any) => r.text);
+          contextText = sanitizePromptInput(chunks.join('\n\n'));
+        }
+      } catch (e) { /* silently fall back */ }
+    }
+    return { contextText, chunks };
+  };
 
   useEffect(() => {
     setActiveDocumentId(activeCourse?.id ?? null);
@@ -50,26 +83,19 @@ export const ActiveLearning: React.FC = () => {
     setAnswers(['', '', '']);
     setFeedback([null, null, null]);
     try {
-      let broaderContext = '';
-      if (activeConcept?.title && activeCourse?.id) {
-        try {
-          const results = await searchIndex(activeConcept.title, 3, activeCourse.id);
-          if (results && results.length > 0) {
-            setSourceChunks(results.map((r: any) => r.text));
-            broaderContext = results.map((r: any) => r.text).join('\n\n');
-            broaderContext = sanitizePromptInput(broaderContext);
-          }
-        } catch (e) { /* silently fall back */ }
+      const { contextText: broaderContext, chunks } = await fetchBroaderContext(activeConcept?.title, activeCourse?.id);
+      if (chunks.length > 0) {
+        setSourceChunks(chunks);
       }
-      const sanitizedContext = sanitizePromptInput(context);
+
+      const sanitizedContext = sanitizePromptInput(context, 'context');
       const prompt = `Based on the following context, generate exactly 3 short, open-ended questions to test the student's understanding.
 Format the output as a JSON array of strings. Do not include markdown blocks.
 Example: ["Question 1?", "Question 2?", "Question 3?"]
 
-<context>
 ${sanitizedContext}
-</context>
-${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context>' : ''}`;
+
+${broaderContext}`;
       const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
       const parsedQuestions = JSON.parse(cleanJson);
@@ -78,7 +104,7 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
       } else {
         throw new Error('Invalid questions format');
       }
-    } catch (e) {
+    } catch {
       setQuestionsError(true);
       showToast('Could not generate questions for this concept.', 'error');
     } finally {
@@ -95,7 +121,7 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
       setAnswers(['', '', '']);
       setFeedback([null, null, null]);
     }
-  }, [activeConcept?.id, apiKey]);
+  }, [activeConcept?.id, activeConcept?.content, activeConcept?.status, apiKey]);
 
   const handleAnswerChange = (index: number, val: string) => {
     const newAnswers = [...answers];
@@ -114,35 +140,22 @@ ${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context
     newGrading[index] = true;
     setGradingIndices(newGrading);
     try {
-      let broaderContext = '';
-      if (activeConcept?.title && activeCourse?.id) {
-        try {
-          const results = await searchIndex(activeConcept.title, 3, activeCourse.id);
-          if (results && results.length > 0) {
-            broaderContext = results.map((r: any) => r.text).join('\n\n');
-            broaderContext = sanitizePromptInput(broaderContext);
-          }
-        } catch (e) { /* silently fall back */ }
-      }
-      const sanitizedContext = sanitizePromptInput(activeConcept.content);
-      const sanitizedQuestion = sanitizePromptInput(questions[index]);
-      const sanitizedAnswer = sanitizePromptInput(answers[index]);
+      const { contextText: broaderContext } = await fetchBroaderContext(activeConcept?.title, activeCourse?.id);
+
+      const sanitizedContext = sanitizePromptInput(activeConcept.content, 'context');
+      const sanitizedQuestion = sanitizePromptInput(questions[index], 'question');
+      const sanitizedAnswer = sanitizePromptInput(answers[index], 'student_answer');
       const prompt = `Is the student's answer correct based on the provided context? If not, provide a 1-sentence hint.
 Output ONLY a JSON object matching this schema, without markdown formatting:
 { "isCorrect": boolean, "hint": string }
 
-<context>
 ${sanitizedContext}
-</context>
-${broaderContext ? '<broader_context>\n' + broaderContext + '\n</broader_context>' : ''}
 
-<question>
+${broaderContext}
+
 ${sanitizedQuestion}
-</question>
 
-<student_answer>
-${sanitizedAnswer}
-</student_answer>`;
+${sanitizedAnswer}`;
       const response = await callLLM(prompt, apiKey, modelName);
       const cleanJson = response.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
       const parsedFeedback = JSON.parse(cleanJson) as QuizFeedback;
@@ -171,7 +184,7 @@ ${sanitizedAnswer}
           setShowCourseComplete(true);
         }
       }
-    } catch (e) {
+    } catch {
       showToast('Grading failed. Please try again.', 'error');
     } finally {
       const done = [...gradingIndices];
@@ -276,9 +289,17 @@ ${sanitizedAnswer}
             <div className="w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto md:border-r border-b md:border-b-0 border-gray-200 p-8">
               <article className="prose max-w-none">
                 <h1 className="text-3xl font-bold mb-6 text-gray-900">{activeConcept.title}</h1>
-                <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                  {activeConcept.content || <span className="text-gray-500 italic">No content available.</span>}
-                </div>
+                {sourcePassages.length > 0 ? (
+                  sourcePassages.map((passage, idx) => (
+                    <blockquote key={idx} className="border-l-4 border-gray-200 pl-4 mb-4 text-gray-800 leading-relaxed whitespace-pre-wrap">
+                      {passage}
+                    </blockquote>
+                  ))
+                ) : (
+                  <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    {activeConcept.content || <span className="text-gray-500 italic">No content available.</span>}
+                  </div>
+                )}
               </article>
             </div>
             <div className="w-full md:w-1/2 min-h-[50vh] md:h-full overflow-y-auto bg-gray-50 p-8">

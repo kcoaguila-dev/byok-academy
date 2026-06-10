@@ -83,12 +83,12 @@ export const BYOKSettings: React.FC = () => {
           Enter your API key. Keys are stored locally in your browser.
         </p>
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">OpenAI API Key</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
         <input
           type="password"
           value={inputKey}
           onChange={(e) => setInputKey(e.target.value)}
-          placeholder="sk-..."
+          placeholder="sk-... or your provider key"
           className="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
@@ -102,6 +102,9 @@ export const BYOKSettings: React.FC = () => {
           <option value="gpt-4o">GPT-4o (Advanced)</option>
           <option value="gpt-4-turbo">GPT-4 Turbo</option>
           <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+          <option value="claude-sonnet-4-5">Claude Sonnet 4.5 (Anthropic)</option>
+          <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Anthropic, Fast)</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Google)</option>
         </select>
 
         <div className="mb-4">

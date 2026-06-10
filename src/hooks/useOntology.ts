@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 import type { Course } from '../types';
 import { chunkText } from '../lib/chunker';
 import { useToast } from '../components/Toast';
-import { sanitizeInput } from '../lib/sanitize';
+import { sanitizePromptInput } from '../lib/sanitize';
 
 export const useOntology = () => {
   const { apiKey, modelName, setActiveCourse } = useStore();
@@ -39,14 +39,37 @@ export const useOntology = () => {
         }
 
         Make sure the output is ONLY valid JSON.
-        Text:
-${sanitizeInput(fullText)}
+
+${sanitizePromptInput(fullText, 'source_text')}
         `;
 
         const response = await callLLM(prompt, apiKey, modelName);
         // Clean up potential markdown formatting
         const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
         const course: Course = JSON.parse(cleanJson);
+
+        // Replace LLM generated concept content with exact source text via keyword matching
+        const paragraphs = fullText.split('\n\n');
+        course.concepts = course.concepts.map(concept => {
+          const titleWords = concept.title.toLowerCase().match(/\b\w+\b/g) || [];
+          let bestParagraph = '';
+          let maxMatches = 0;
+
+          paragraphs.forEach(paragraph => {
+            const paragraphLower = paragraph.toLowerCase();
+            const matches = titleWords.filter(word => paragraphLower.includes(word)).length;
+            if (matches > maxMatches) {
+              maxMatches = matches;
+              bestParagraph = paragraph.trim();
+            }
+          });
+
+          return {
+            ...concept,
+            content: maxMatches > 0 ? bestParagraph : concept.content
+          };
+        });
+
         useStore.getState().addCourse(course);
         setActiveCourse(course);
         break; // Success, exit loop

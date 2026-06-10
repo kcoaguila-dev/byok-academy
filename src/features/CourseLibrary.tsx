@@ -11,7 +11,7 @@ import { DataBackup } from '../components/DataBackup';
 export const CourseLibrary: React.FC = () => {
   const { apiKey, courses, setActiveCourse, deleteCourse, setParsedText } = useStore();
   const { showToast } = useToast();
-  const { generateSyllabus, loading, error } = useOntology();
+  const { generateSyllabus, loading, error, retryCount } = useOntology();
   const { confirm } = useConfirm();
 
   const [processingPhase, setProcessingPhase] = useState<'idle' | 'extracting' | 'generating' | 'indexing'>('idle');
@@ -122,7 +122,7 @@ export const CourseLibrary: React.FC = () => {
               <div className="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
               <p className="text-sm text-gray-700 font-medium">
                 {processingPhase === 'extracting' ? 'Extracting text...' :
-                 processingPhase === 'generating' || loading ? 'Generating syllabus...' :
+                 processingPhase === 'generating' || loading ? (retryCount > 0 ? 'Retrying...' : 'Generating syllabus...') :
                  processingPhase === 'indexing' ? 'Indexing document for search...' : 'Processing...'}
               </p>
               {(processingPhase === 'extracting' || processingPhase === 'indexing') && (
